@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import Editor from '@monaco-editor/react';
-import { Moon, Sun, Download, Save, FolderOpen, Maximize2, Minimize2, Copy, RotateCcw } from 'lucide-react';
+import { Moon, Sun, Download, Save, FolderOpen, Maximize2, Minimize2, Copy, RotateCcw, Trash2, SelectAll } from 'lucide-react';
 
 const Index = () => {
   const [htmlCode, setHtmlCode] = useState(`<!DOCTYPE html>
@@ -111,6 +111,36 @@ const Index = () => {
     setIsDarkMode(!isDarkMode);
   };
 
+  const toggleFullscreen = () => {
+    setIsFullscreen(!isFullscreen);
+  };
+
+  const selectAllCode = () => {
+    if (editorRef.current) {
+      editorRef.current.setSelection(editorRef.current.getModel().getFullModelRange());
+      editorRef.current.focus();
+    }
+  };
+
+  const copyToClipboard = async () => {
+    try {
+      await navigator.clipboard.writeText(htmlCode);
+      // You could add a toast notification here if needed
+      console.log('Code copied to clipboard');
+    } catch (err) {
+      console.error('Failed to copy code:', err);
+    }
+  };
+
+  const clearCode = () => {
+    if (confirm('Are you sure you want to clear all code? This action cannot be undone.')) {
+      setHtmlCode('');
+      if (editorRef.current) {
+        editorRef.current.focus();
+      }
+    }
+  };
+
   const saveProject = () => {
     const projectName = prompt('Enter project name:');
     if (projectName) {
@@ -146,11 +176,6 @@ const Index = () => {
     a.download = 'index.html';
     a.click();
     URL.revokeObjectURL(url);
-  };
-
-  const copyToClipboard = () => {
-    navigator.clipboard.writeText(htmlCode);
-    alert('Code copied to clipboard!');
   };
 
   const resetCode = () => {
@@ -192,6 +217,27 @@ const Index = () => {
 
             <div className="flex items-center space-x-3">
               <button
+                onClick={selectAllCode}
+                className={`p-2 rounded-lg transition-all duration-200 ${isDarkMode ? 'hover:bg-gray-700 text-gray-300' : 'hover:bg-gray-100 text-gray-600'}`}
+                title="Select All Code"
+              >
+                <SelectAll size={18} />
+              </button>
+              <button
+                onClick={copyToClipboard}
+                className={`p-2 rounded-lg transition-all duration-200 ${isDarkMode ? 'hover:bg-gray-700 text-gray-300' : 'hover:bg-gray-100 text-gray-600'}`}
+                title="Copy Code"
+              >
+                <Copy size={18} />
+              </button>
+              <button
+                onClick={clearCode}
+                className={`p-2 rounded-lg transition-all duration-200 ${isDarkMode ? 'hover:bg-gray-700 text-gray-300' : 'hover:bg-gray-100 text-gray-600'}`}
+                title="Clear Code"
+              >
+                <Trash2 size={18} />
+              </button>
+              <button
                 onClick={saveProject}
                 className={`p-2 rounded-lg transition-all duration-200 ${isDarkMode ? 'hover:bg-gray-700 text-gray-300' : 'hover:bg-gray-100 text-gray-600'}`}
                 title="Save Project"
@@ -211,20 +257,6 @@ const Index = () => {
                 title="Download HTML"
               >
                 <Download size={18} />
-              </button>
-              <button
-                onClick={copyToClipboard}
-                className={`p-2 rounded-lg transition-all duration-200 ${isDarkMode ? 'hover:bg-gray-700 text-gray-300' : 'hover:bg-gray-100 text-gray-600'}`}
-                title="Copy Code"
-              >
-                <Copy size={18} />
-              </button>
-              <button
-                onClick={resetCode}
-                className={`p-2 rounded-lg transition-all duration-200 ${isDarkMode ? 'hover:bg-gray-700 text-gray-300' : 'hover:bg-gray-100 text-gray-600'}`}
-                title="Reset Code"
-              >
-                <RotateCcw size={18} />
               </button>
               <button
                 onClick={() => setIsFullscreen(!isFullscreen)}
@@ -264,7 +296,16 @@ const Index = () => {
               <div className={`px-4 py-2 border-b transition-colors duration-300 ${isDarkMode ? 'bg-gray-800 border-gray-700 text-gray-300' : 'bg-gray-50 border-gray-200 text-gray-700'}`}>
                 <div className="flex items-center justify-between">
                   <span className="text-sm font-medium">HTML Editor</span>
-                  <span className="text-xs opacity-75">Auto-save enabled</span>
+                  <div className="flex items-center space-x-2">
+                    <button
+                      onClick={selectAllCode}
+                      className={`text-xs px-2 py-1 rounded transition-colors duration-200 ${isDarkMode ? 'hover:bg-gray-700 text-gray-400' : 'hover:bg-gray-200 text-gray-600'}`}
+                      title="Select All"
+                    >
+                      Select All
+                    </button>
+                    <span className="text-xs opacity-75">Auto-save enabled</span>
+                  </div>
                 </div>
               </div>
               <div className="flex-1">
@@ -298,8 +339,20 @@ const Index = () => {
           <div className={`${isFullscreen ? 'w-full' : 'flex-1'} flex flex-col`}>
             <div className={`px-4 py-2 border-b transition-colors duration-300 ${isDarkMode ? 'bg-gray-800 border-gray-700 text-gray-300' : 'bg-gray-50 border-gray-200 text-gray-700'} ${!isFullscreen ? 'lg:border-l' : ''}`}>
               <div className="flex items-center justify-between">
-                <span className="text-sm font-medium">Live Preview</span>
-                <span className="text-xs opacity-75">Real-time rendering</span>
+                <span className="text-sm font-medium">
+                  {isFullscreen ? 'Full Preview Mode' : 'Live Preview'}
+                </span>
+                <div className="flex items-center space-x-2">
+                  {isFullscreen && (
+                    <button
+                      onClick={toggleFullscreen}
+                      className={`text-xs px-2 py-1 rounded transition-colors duration-200 ${isDarkMode ? 'hover:bg-gray-700 text-gray-400' : 'hover:bg-gray-200 text-gray-600'}`}
+                    >
+                      Exit Full Mode
+                    </button>
+                  )}
+                  <span className="text-xs opacity-75">Real-time rendering</span>
+                </div>
               </div>
             </div>
             <div className="flex-1 relative">
