@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import Editor from '@monaco-editor/react';
-import { Moon, Sun, Download, Save, FolderOpen, Maximize2, Minimize2, Copy, RotateCcw, Trash2, MousePointerSquare } from 'lucide-react';
+import { Moon, Sun, Download, Save, FolderOpen, Maximize2, Minimize2, Copy, RotateCcw, Trash2, MousePointer } from 'lucide-react';
 
 const Index = () => {
   const [htmlCode, setHtmlCode] = useState(`<!DOCTYPE html>
@@ -221,7 +221,7 @@ const Index = () => {
                 className={`p-2 rounded-lg transition-all duration-200 ${isDarkMode ? 'hover:bg-gray-700 text-gray-300' : 'hover:bg-gray-100 text-gray-600'}`}
                 title="Select All Code"
               >
-                <MousePointerSquare size={18} />
+                <MousePointer size={18} />
               </button>
               <button
                 onClick={copyToClipboard}
