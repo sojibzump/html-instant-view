@@ -1,6 +1,5 @@
-
 import React, { useState, useEffect, useRef } from 'react';
-import { Monaco } from '@monaco-editor/react';
+import Editor from '@monaco-editor/react';
 import { Moon, Sun, Download, Save, FolderOpen, Maximize2, Minimize2, Copy, RotateCcw } from 'lucide-react';
 
 const Index = () => {
@@ -269,7 +268,7 @@ const Index = () => {
                 </div>
               </div>
               <div className="flex-1">
-                <Monaco
+                <Editor
                   height="100%"
                   defaultLanguage="html"
                   value={htmlCode}
