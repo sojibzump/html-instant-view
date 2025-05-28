@@ -8,6 +8,7 @@ import MobileAd from '../components/MobileAd';
 import TemplateSelector from '../components/TemplateSelector';
 import ErrorPanel from '../components/ErrorPanel';
 import AISuggestionsPanel from '../components/AISuggestionsPanel';
+import AIChatPanel from '../components/AIChatPanel';
 import { BloggerTemplate } from '../data/bloggerTemplates';
 import { ValidationResult } from '../utils/xmlValidator';
 import { useAICodeAnalysis } from '../hooks/useAICodeAnalysis';
@@ -60,6 +61,7 @@ const Index = () => {
   const [showErrors, setShowErrors] = useState(false);
   const [validationResult, setValidationResult] = useState<ValidationResult>({ isValid: true, errors: [] });
   const [showAIAssistant, setShowAIAssistant] = useState(false);
+  const [showAIChat, setShowAIChat] = useState(false);
   
   const editorRef = useRef<any>(null);
   const previewRef = useRef<HTMLIFrameElement>(null);
@@ -230,6 +232,13 @@ const Index = () => {
     editorRef.current.focus();
   }, []);
 
+  const handleCodeGenerated = useCallback((generatedCode: string) => {
+    setHtmlCode(generatedCode);
+    if (editorRef.current) {
+      editorRef.current.focus();
+    }
+  }, []);
+
   return (
     <div className={`min-h-screen transition-colors duration-300 ${isDarkMode ? 'bg-gray-900' : 'bg-gray-50'}`}>
       {/* Header */}
@@ -267,6 +276,7 @@ const Index = () => {
                   onShowTemplates={() => setShowTemplates(true)}
                   onValidationChange={handleValidationChange}
                   onShowAISuggestions={() => setShowAIAssistant(true)}
+                  onShowDeepSeekChat={() => setShowAIChat(true)}
                   onApplyCorrection={handleApplyCorrection}
                 />
                 
@@ -286,6 +296,15 @@ const Index = () => {
                   isVisible={showAIAssistant}
                   onClose={() => setShowAIAssistant(false)}
                   onApplyCorrection={handleApplyCorrection}
+                />
+
+                {/* DeepSeek AI Chat Panel */}
+                <AIChatPanel
+                  isVisible={showAIChat}
+                  isDarkMode={isDarkMode}
+                  currentCode={htmlCode}
+                  onClose={() => setShowAIChat(false)}
+                  onCodeGenerated={handleCodeGenerated}
                 />
               </div>
             )}

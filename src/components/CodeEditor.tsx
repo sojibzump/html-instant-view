@@ -1,7 +1,7 @@
 
 import React, { useEffect, useState, useCallback, useMemo } from 'react';
 import Editor from '@monaco-editor/react';
-import { MousePointer, FileCode2, AlertTriangle, Brain } from 'lucide-react';
+import { MousePointer, FileCode2, AlertTriangle, Brain, MessageSquare } from 'lucide-react';
 import { validateXML, detectLanguage, ValidationResult } from '../utils/xmlValidator';
 import { useAICodeAnalysis } from '../hooks/useAICodeAnalysis';
 
@@ -15,6 +15,7 @@ interface CodeEditorProps {
   onShowTemplates: () => void;
   onValidationChange: (result: ValidationResult) => void;
   onShowAISuggestions: () => void;
+  onShowDeepSeekChat: () => void;
   onApplyCorrection: (correction: any) => void;
 }
 
@@ -28,6 +29,7 @@ const CodeEditor: React.FC<CodeEditorProps> = ({
   onShowTemplates,
   onValidationChange,
   onShowAISuggestions,
+  onShowDeepSeekChat,
   onApplyCorrection,
 }) => {
   const [language, setLanguage] = useState<'html' | 'xml'>('html');
@@ -110,6 +112,14 @@ const CodeEditor: React.FC<CodeEditorProps> = ({
             </div>
           </div>
           <div className="flex items-center space-x-2">
+            <button
+              onClick={onShowDeepSeekChat}
+              className={`text-xs px-2 py-1 rounded transition-colors duration-200 flex items-center space-x-1 ${isDarkMode ? 'hover:bg-gray-700 text-gray-400' : 'hover:bg-gray-200 text-gray-600'}`}
+              title="DeepSeek AI Chat"
+            >
+              <MessageSquare size={12} />
+              <span className="hidden sm:inline">AI Chat</span>
+            </button>
             <button
               onClick={onShowAISuggestions}
               className={`text-xs px-2 py-1 rounded transition-colors duration-200 flex items-center space-x-1 ${isDarkMode ? 'hover:bg-gray-700 text-gray-400' : 'hover:bg-gray-200 text-gray-600'}`}
