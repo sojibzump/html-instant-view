@@ -7,8 +7,10 @@ import Footer from '../components/Footer';
 import MobileAd from '../components/MobileAd';
 import TemplateSelector from '../components/TemplateSelector';
 import ErrorPanel from '../components/ErrorPanel';
+import AISuggestionsPanel from '../components/AISuggestionsPanel';
 import { BloggerTemplate } from '../data/bloggerTemplates';
 import { ValidationResult } from '../utils/xmlValidator';
+import { useAICodeAnalysis } from '../hooks/useAICodeAnalysis';
 
 const Index = () => {
   const [htmlCode, setHtmlCode] = useState(`<!DOCTYPE html>
@@ -57,9 +59,12 @@ const Index = () => {
   const [showTemplates, setShowTemplates] = useState(false);
   const [showErrors, setShowErrors] = useState(false);
   const [validationResult, setValidationResult] = useState<ValidationResult>({ isValid: true, errors: [] });
+  const [showAIAssistant, setShowAIAssistant] = useState(false);
   
   const editorRef = useRef<any>(null);
   const previewRef = useRef<HTMLIFrameElement>(null);
+
+  const { analysis } = useAICodeAnalysis();
 
   useEffect(() => {
     // Load saved projects from localStorage
@@ -203,6 +208,28 @@ const Index = () => {
     }
   }, []);
 
+  const handleApplyCorrection = useCallback((correction: any) => {
+    if (!editorRef.current) return;
+
+    const model = editorRef.current.getModel();
+    const lineContent = model.getLineContent(correction.line);
+    const updatedLine = lineContent.replace(correction.original, correction.corrected);
+    
+    const range = {
+      startLineNumber: correction.line,
+      startColumn: 1,
+      endLineNumber: correction.line,
+      endColumn: lineContent.length + 1
+    };
+
+    editorRef.current.executeEdits('ai-correction', [{
+      range,
+      text: updatedLine
+    }]);
+
+    editorRef.current.focus();
+  }, []);
+
   return (
     <div className={`min-h-screen transition-colors duration-300 ${isDarkMode ? 'bg-gray-900' : 'bg-gray-50'}`}>
       {/* Header */}
@@ -239,6 +266,8 @@ const Index = () => {
                   onSelectAllCode={selectAllCode}
                   onShowTemplates={() => setShowTemplates(true)}
                   onValidationChange={handleValidationChange}
+                  onShowAISuggestions={() => setShowAIAssistant(true)}
+                  onApplyCorrection={handleApplyCorrection}
                 />
                 
                 {/* Error Panel */}
@@ -247,6 +276,16 @@ const Index = () => {
                   isDarkMode={isDarkMode}
                   isVisible={showErrors}
                   onClose={() => setShowErrors(false)}
+                />
+
+                {/* AI Suggestions Panel */}
+                <AISuggestionsPanel
+                  analysis={analysis}
+                  isAnalyzing={false}
+                  isDarkMode={isDarkMode}
+                  isVisible={showAIAssistant}
+                  onClose={() => setShowAIAssistant(false)}
+                  onApplyCorrection={handleApplyCorrection}
                 />
               </div>
             )}
