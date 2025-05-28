@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import Header from '../components/Header';
 import AdSidebar from '../components/AdSidebar';
 import CodeEditor from '../components/CodeEditor';
@@ -196,12 +196,12 @@ const Index = () => {
     }
   };
 
-  const handleValidationChange = (result: ValidationResult) => {
+  const handleValidationChange = useCallback((result: ValidationResult) => {
     setValidationResult(result);
     if (result.errors.length > 0) {
       setShowErrors(true);
     }
-  };
+  }, []);
 
   return (
     <div className={`min-h-screen transition-colors duration-300 ${isDarkMode ? 'bg-gray-900' : 'bg-gray-50'}`}>
