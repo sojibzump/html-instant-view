@@ -1,4 +1,5 @@
-import React, { useEffect, useState, useCallback } from 'react';
+
+import React, { useEffect, useState, useCallback, useMemo } from 'react';
 import Editor from '@monaco-editor/react';
 import { MousePointer, FileCode2, AlertTriangle } from 'lucide-react';
 import { validateXML, detectLanguage, ValidationResult } from '../utils/xmlValidator';
@@ -27,12 +28,13 @@ const CodeEditor: React.FC<CodeEditorProps> = ({
   const [language, setLanguage] = useState<'html' | 'xml'>('html');
   const [validationResult, setValidationResult] = useState<ValidationResult>({ isValid: true, errors: [] });
 
-  const handleValidation = useCallback((code: string) => {
-    const detectedLanguage = detectLanguage(code);
+  const detectedLanguage = useMemo(() => detectLanguage(htmlCode), [htmlCode]);
+
+  useEffect(() => {
     setLanguage(detectedLanguage);
     
     if (detectedLanguage === 'xml') {
-      const result = validateXML(code);
+      const result = validateXML(htmlCode);
       setValidationResult(result);
       onValidationChange(result);
     } else {
@@ -40,11 +42,7 @@ const CodeEditor: React.FC<CodeEditorProps> = ({
       setValidationResult(result);
       onValidationChange(result);
     }
-  }, [onValidationChange]);
-
-  useEffect(() => {
-    handleValidation(htmlCode);
-  }, [htmlCode, handleValidation]);
+  }, [htmlCode, detectedLanguage, onValidationChange]);
 
   const errorCount = validationResult.errors.filter(e => e.type === 'error').length;
   const warningCount = validationResult.errors.filter(e => e.type === 'warning').length;
