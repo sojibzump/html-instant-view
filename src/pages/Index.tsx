@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, useRef } from 'react';
 import Header from '../components/Header';
 import AdSidebar from '../components/AdSidebar';
@@ -6,6 +5,10 @@ import CodeEditor from '../components/CodeEditor';
 import LivePreview from '../components/LivePreview';
 import Footer from '../components/Footer';
 import MobileAd from '../components/MobileAd';
+import TemplateSelector from '../components/TemplateSelector';
+import ErrorPanel from '../components/ErrorPanel';
+import { BloggerTemplate } from '../data/bloggerTemplates';
+import { ValidationResult } from '../utils/xmlValidator';
 
 const Index = () => {
   const [htmlCode, setHtmlCode] = useState(`<!DOCTYPE html>
@@ -43,7 +46,7 @@ const Index = () => {
     <div class="container">
         <h1>Welcome to HTML Live Editor!</h1>
         <p>Start editing the code on the left to see real-time changes here.</p>
-        <p>This is a professional HTML editor with live preview capabilities.</p>
+        <p>Now supports Blogger XML templates with error detection!</p>
     </div>
 </body>
 </html>`);
@@ -51,6 +54,10 @@ const Index = () => {
   const [isDarkMode, setIsDarkMode] = useState(true);
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [savedProjects, setSavedProjects] = useState<string[]>([]);
+  const [showTemplates, setShowTemplates] = useState(false);
+  const [showErrors, setShowErrors] = useState(false);
+  const [validationResult, setValidationResult] = useState<ValidationResult>({ isValid: true, errors: [] });
+  
   const editorRef = useRef<any>(null);
   const previewRef = useRef<HTMLIFrameElement>(null);
 
@@ -182,6 +189,20 @@ const Index = () => {
     URL.revokeObjectURL(url);
   };
 
+  const handleTemplateSelect = (template: BloggerTemplate) => {
+    setHtmlCode(template.code);
+    if (editorRef.current) {
+      editorRef.current.focus();
+    }
+  };
+
+  const handleValidationChange = (result: ValidationResult) => {
+    setValidationResult(result);
+    if (result.errors.length > 0) {
+      setShowErrors(true);
+    }
+  };
+
   return (
     <div className={`min-h-screen transition-colors duration-300 ${isDarkMode ? 'bg-gray-900' : 'bg-gray-50'}`}>
       {/* Header */}
@@ -204,29 +225,51 @@ const Index = () => {
         {!isFullscreen && <AdSidebar isDarkMode={isDarkMode} />}
 
         {/* Editor and Preview */}
-        <div className="flex-1 flex flex-col md:flex-row">
-          {/* Code Editor - Hidden in fullscreen mode */}
-          {!isFullscreen && (
-            <CodeEditor
+        <div className="flex-1 flex flex-col">
+          <div className="flex-1 flex flex-col md:flex-row min-h-0">
+            {/* Code Editor - Hidden in fullscreen mode */}
+            {!isFullscreen && (
+              <div className="flex-1 flex flex-col min-h-0">
+                <CodeEditor
+                  htmlCode={htmlCode}
+                  isDarkMode={isDarkMode}
+                  editorRef={editorRef}
+                  onCodeChange={setHtmlCode}
+                  onEditorDidMount={handleEditorDidMount}
+                  onSelectAllCode={selectAllCode}
+                  onShowTemplates={() => setShowTemplates(true)}
+                  onValidationChange={handleValidationChange}
+                />
+                
+                {/* Error Panel */}
+                <ErrorPanel
+                  errors={validationResult.errors}
+                  isDarkMode={isDarkMode}
+                  isVisible={showErrors}
+                  onClose={() => setShowErrors(false)}
+                />
+              </div>
+            )}
+
+            {/* Live Preview */}
+            <LivePreview
               htmlCode={htmlCode}
               isDarkMode={isDarkMode}
-              editorRef={editorRef}
-              onCodeChange={setHtmlCode}
-              onEditorDidMount={handleEditorDidMount}
-              onSelectAllCode={selectAllCode}
+              isFullscreen={isFullscreen}
+              previewRef={previewRef}
+              onToggleFullscreen={toggleFullscreen}
             />
-          )}
-
-          {/* Live Preview */}
-          <LivePreview
-            htmlCode={htmlCode}
-            isDarkMode={isDarkMode}
-            isFullscreen={isFullscreen}
-            previewRef={previewRef}
-            onToggleFullscreen={toggleFullscreen}
-          />
+          </div>
         </div>
       </div>
+
+      {/* Template Selector Modal */}
+      <TemplateSelector
+        isDarkMode={isDarkMode}
+        onTemplateSelect={handleTemplateSelect}
+        isVisible={showTemplates}
+        onClose={() => setShowTemplates(false)}
+      />
 
       {/* Footer with Ad Zone - Hidden in fullscreen mode */}
       {!isFullscreen && <Footer isDarkMode={isDarkMode} />}
