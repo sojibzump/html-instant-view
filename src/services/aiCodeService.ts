@@ -1,3 +1,4 @@
+
 interface AICodeResponse {
   suggestions: string[];
   errors: Array<{
@@ -16,7 +17,7 @@ interface AICodeResponse {
 
 interface ChatMessage {
   id: string;
-  role: 'user' | 'assistant';
+  role: 'user' | 'assistant' | 'system';
   content: string;
   timestamp: Date;
 }
