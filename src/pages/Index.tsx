@@ -286,8 +286,8 @@ const Index = () => {
   }, []);
 
   return (
-    <div className={`min-h-screen transition-colors duration-300 ${isDarkMode ? 'bg-gray-900' : 'bg-gray-50'}`}>
-      {/* Header */}
+    <div className={`min-h-screen transition-colors duration-300 ${isDarkMode ? 'bg-gray-900' : 'bg-gray-50'} flex flex-col`}>
+      {/* Header - Fixed height for consistency */}
       <Header
         isDarkMode={isDarkMode}
         isFullscreen={isFullscreen}
@@ -301,17 +301,17 @@ const Index = () => {
         onExportHTML={exportHTML}
       />
 
-      {/* Main Content */}
-      <div className={`flex flex-1 ${isFullscreen ? 'h-[calc(100vh-73px)]' : 'h-[calc(100vh-73px)]'}`}>
-        {/* Sidebar Ad Zone - Only on desktop and not in fullscreen */}
+      {/* Main Content - Flexible layout */}
+      <div className={`flex-1 flex min-h-0 ${isFullscreen ? '' : 'pb-12 sm:pb-16 lg:pb-0'}`}>
+        {/* Sidebar Ad Zone - Only on large desktop and not in fullscreen */}
         {!isFullscreen && <AdSidebar isDarkMode={isDarkMode} />}
 
-        {/* Editor and Preview */}
-        <div className="flex-1 flex flex-col">
-          <div className="flex-1 flex flex-col md:flex-row min-h-0">
-            {/* Code Editor - Hidden in fullscreen mode */}
+        {/* Editor and Preview Container */}
+        <div className="flex-1 flex flex-col min-h-0">
+          <div className="flex-1 flex flex-col lg:flex-row min-h-0">
+            {/* Code Editor - Responsive behavior */}
             {!isFullscreen && (
-              <div className="flex-1 flex flex-col min-h-0">
+              <div className={`flex-1 flex flex-col min-h-0 ${isFullscreen ? '' : 'lg:w-1/2'}`}>
                 <CodeEditor
                   htmlCode={htmlCode}
                   isDarkMode={isDarkMode}
@@ -326,7 +326,7 @@ const Index = () => {
                   onApplyCorrection={handleApplyCorrection}
                 />
                 
-                {/* Error Panel */}
+                {/* Error Panel - Responsive positioning */}
                 <ErrorPanel
                   errors={validationResult.errors}
                   isDarkMode={isDarkMode}
@@ -334,7 +334,7 @@ const Index = () => {
                   onClose={() => setShowErrors(false)}
                 />
 
-                {/* AI Suggestions Panel */}
+                {/* AI Suggestions Panel - Responsive positioning */}
                 <AISuggestionsPanel
                   analysis={analysis}
                   isAnalyzing={false}
@@ -346,7 +346,7 @@ const Index = () => {
               </div>
             )}
 
-            {/* Live Preview */}
+            {/* Live Preview - Responsive sizing */}
             <LivePreview
               htmlCode={htmlCode}
               isDarkMode={isDarkMode}
@@ -358,7 +358,7 @@ const Index = () => {
         </div>
       </div>
 
-      {/* Draggable AI Chat Panel */}
+      {/* Draggable AI Chat Panel - Responsive behavior */}
       <DraggableChatPanel
         isVisible={showAIChat}
         isDarkMode={isDarkMode}
@@ -367,7 +367,7 @@ const Index = () => {
         onCodeGenerated={handleCodeGenerated}
       />
 
-      {/* Template Selector Modal */}
+      {/* Template Selector Modal - Full responsive support */}
       <TemplateSelector
         isDarkMode={isDarkMode}
         onTemplateSelect={handleTemplateSelect}
@@ -375,10 +375,10 @@ const Index = () => {
         onClose={() => setShowTemplates(false)}
       />
 
-      {/* Footer with Ad Zone - Hidden in fullscreen mode */}
+      {/* Footer - Hidden in fullscreen, responsive spacing */}
       {!isFullscreen && <Footer isDarkMode={isDarkMode} />}
 
-      {/* Mobile Ad Zone - Sticky bottom, hidden in fullscreen */}
+      {/* Mobile Ad Zone - Responsive bottom positioning */}
       {!isFullscreen && <MobileAd isDarkMode={isDarkMode} />}
     </div>
   );

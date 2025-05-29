@@ -1,3 +1,4 @@
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
@@ -35,19 +36,12 @@
     --radius: 0.5rem;
 
     --sidebar-background: 0 0% 98%;
-
     --sidebar-foreground: 240 5.3% 26.1%;
-
     --sidebar-primary: 240 5.9% 10%;
-
     --sidebar-primary-foreground: 0 0% 98%;
-
     --sidebar-accent: 240 4.8% 95.9%;
-
     --sidebar-accent-foreground: 240 5.9% 10%;
-
     --sidebar-border: 220 13% 91%;
-
     --sidebar-ring: 217.2 91.2% 59.8%;
   }
 
@@ -97,5 +91,88 @@
 
   body {
     @apply bg-background text-foreground;
+  }
+}
+
+@layer utilities {
+  /* Mobile-specific utilities */
+  .mobile-scroll-area {
+    height: calc(100vh - 120px);
+    @apply overflow-y-auto;
+  }
+
+  /* Responsive text sizing */
+  .text-responsive-lg {
+    @apply text-sm sm:text-base lg:text-lg;
+  }
+
+  .text-responsive-xl {
+    @apply text-base sm:text-lg lg:text-xl;
+  }
+
+  /* Touch-friendly button sizing */
+  .btn-touch {
+    @apply min-h-[44px] min-w-[44px] p-2;
+  }
+
+  /* Responsive padding/margin */
+  .responsive-padding {
+    @apply px-2 sm:px-4 lg:px-6;
+  }
+
+  .responsive-margin {
+    @apply mx-2 sm:mx-4 lg:mx-6;
+  }
+
+  /* Safe area insets for mobile */
+  .safe-area-inset {
+    padding-bottom: env(safe-area-inset-bottom);
+    padding-left: env(safe-area-inset-left);
+    padding-right: env(safe-area-inset-right);
+  }
+
+  /* Responsive grid layouts */
+  .responsive-grid {
+    @apply grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-2 sm:gap-4;
+  }
+
+  /* Mobile-first animations */
+  @media (prefers-reduced-motion: reduce) {
+    .animate-fade-in,
+    .animate-slide-in,
+    .animate-slide-up {
+      animation: none;
+    }
+  }
+}
+
+/* Responsive breakpoint helpers */
+@media (max-width: 479px) {
+  .hide-xs {
+    display: none !important;
+  }
+}
+
+@media (max-width: 639px) {
+  .hide-sm {
+    display: none !important;
+  }
+}
+
+@media (max-width: 767px) {
+  .hide-md {
+    display: none !important;
+  }
+}
+
+@media (max-width: 1023px) {
+  .hide-lg {
+    display: none !important;
+  }
+}
+
+@media (max-width: 1279px) {
+  .hide-xl {
+    display: none !important;
   }
 }
