@@ -81,33 +81,46 @@ const CodeEditor: React.FC<CodeEditorProps> = ({
 
   return (
     <div className="flex-1 flex flex-col min-h-0">
-      <div className={`px-2 sm:px-4 py-2 border-b transition-colors duration-300 ${isDarkMode ? 'bg-gray-800 border-gray-700 text-gray-300' : 'bg-gray-50 border-gray-200 text-gray-700'}`}>
+      <div className={`px-4 py-3 border-b transition-colors duration-300 ${
+        isDarkMode 
+          ? 'bg-gray-900 border-gray-700 text-gray-300' 
+          : 'bg-white border-gray-200 text-gray-700'
+      }`}>
         <div className="flex items-center justify-between">
-          <div className="flex items-center space-x-2 sm:space-x-3 min-w-0">
-            <div className="flex items-center space-x-2">
-              <span className="text-sm font-medium truncate">
-                {language === 'xml' ? 'Blogger XML Editor' : 'HTML Editor'}
-              </span>
-              {getDeviceIcon()}
+          <div className="flex items-center space-x-4 min-w-0">
+            <div className="flex items-center space-x-3">
+              <div className="flex items-center space-x-2">
+                <span className="text-sm font-semibold">
+                  {language === 'xml' ? '🔧 Blogger XML Editor' : '💻 HTML Editor'}
+                </span>
+                {getDeviceIcon()}
+              </div>
+              
+              {/* AI Copilot Integration Badge */}
+              <div className="flex items-center space-x-1 px-2 py-1 bg-blue-500 bg-opacity-10 rounded-full border border-blue-500 border-opacity-20">
+                <div className="w-2 h-2 bg-green-400 rounded-full animate-pulse"></div>
+                <span className="text-xs font-medium text-blue-500">AI Ready</span>
+              </div>
             </div>
-            <div className="flex items-center space-x-1 sm:space-x-2 overflow-x-auto">
-              {/* XML Validation Results */}
+            
+            <div className="flex items-center space-x-2 overflow-x-auto">
+              {/* Validation Results with enhanced styling */}
               {language === 'xml' && (
                 <>
                   {errorCount > 0 && (
-                    <span className="text-xs px-2 py-1 bg-red-100 text-red-800 rounded flex items-center space-x-1 flex-shrink-0">
-                      <AlertTriangle size={10} />
+                    <span className="text-xs px-3 py-1.5 bg-red-500 bg-opacity-10 text-red-600 rounded-full border border-red-500 border-opacity-20 flex items-center space-x-1 flex-shrink-0">
+                      <AlertTriangle size={12} />
                       <span>{errorCount} error{errorCount !== 1 ? 's' : ''}</span>
                     </span>
                   )}
                   {warningCount > 0 && (
-                    <span className="text-xs px-2 py-1 bg-yellow-100 text-yellow-800 rounded flex-shrink-0">
+                    <span className="text-xs px-3 py-1.5 bg-yellow-500 bg-opacity-10 text-yellow-600 rounded-full border border-yellow-500 border-opacity-20 flex-shrink-0">
                       {warningCount} warning{warningCount !== 1 ? 's' : ''}
                     </span>
                   )}
                   {validationResult.isValid && (
-                    <span className="text-xs px-2 py-1 bg-green-100 text-green-800 rounded flex-shrink-0">
-                      Valid XML
+                    <span className="text-xs px-3 py-1.5 bg-green-500 bg-opacity-10 text-green-600 rounded-full border border-green-500 border-opacity-20 flex-shrink-0">
+                      ✓ Valid XML
                     </span>
                   )}
                 </>
@@ -117,55 +130,75 @@ const CodeEditor: React.FC<CodeEditorProps> = ({
               {(aiIssuesCount > 0 || aiSuggestionsCount > 0) && (
                 <button
                   onClick={onShowAISuggestions}
-                  className="text-xs px-2 py-1 bg-blue-100 text-blue-800 rounded flex items-center space-x-1 hover:bg-blue-200 transition-colors flex-shrink-0"
+                  className="text-xs px-3 py-1.5 bg-blue-500 bg-opacity-10 text-blue-600 rounded-full border border-blue-500 border-opacity-20 flex items-center space-x-1 hover:bg-opacity-20 transition-all flex-shrink-0"
                 >
-                  <Brain size={10} />
+                  <Brain size={12} />
                   <span>{aiIssuesCount + aiSuggestionsCount} insights</span>
                 </button>
               )}
               
               {isAnalyzing && (
-                <div className="flex items-center space-x-1 flex-shrink-0">
+                <div className="flex items-center space-x-2 flex-shrink-0 px-3 py-1.5 bg-blue-500 bg-opacity-10 rounded-full border border-blue-500 border-opacity-20">
                   <div className="animate-spin w-3 h-3 border-2 border-blue-500 border-t-transparent rounded-full"></div>
-                  <span className="text-xs text-blue-500 hidden sm:inline">AI analyzing...</span>
+                  <span className="text-xs text-blue-600 hidden sm:inline">AI analyzing...</span>
                 </div>
               )}
             </div>
           </div>
-          <div className="flex items-center space-x-1 sm:space-x-2 flex-shrink-0">
+          
+          <div className="flex items-center space-x-2 flex-shrink-0">
             <button
               onClick={onShowDeepSeekChat}
-              className={`text-xs px-2 py-1 rounded transition-colors duration-200 flex items-center space-x-1 ${isDarkMode ? 'hover:bg-gray-700 text-gray-400' : 'hover:bg-gray-200 text-gray-600'}`}
-              title="DeepSeek AI Chat"
+              className={`text-xs px-3 py-1.5 rounded-full transition-all duration-200 flex items-center space-x-2 border ${
+                isDarkMode 
+                  ? 'hover:bg-gray-700 text-gray-400 border-gray-600 hover:border-gray-500' 
+                  : 'hover:bg-gray-100 text-gray-600 border-gray-300 hover:border-gray-400'
+              }`}
+              title="Open AI Copilot Chat"
             >
-              <MessageSquare size={10} />
-              <span className="hidden md:inline">AI Chat</span>
+              <MessageSquare size={12} />
+              <span className="hidden md:inline font-medium">AI Copilot</span>
             </button>
             <button
               onClick={onShowAISuggestions}
-              className={`text-xs px-2 py-1 rounded transition-colors duration-200 flex items-center space-x-1 ${isDarkMode ? 'hover:bg-gray-700 text-gray-400' : 'hover:bg-gray-200 text-gray-600'}`}
-              title="AI Assistant"
+              className={`text-xs px-3 py-1.5 rounded-full transition-all duration-200 flex items-center space-x-2 border ${
+                isDarkMode 
+                  ? 'hover:bg-gray-700 text-gray-400 border-gray-600 hover:border-gray-500' 
+                  : 'hover:bg-gray-100 text-gray-600 border-gray-300 hover:border-gray-400'
+              }`}
+              title="AI Suggestions"
             >
-              <Brain size={10} />
-              <span className="hidden lg:inline">AI Assistant</span>
+              <Brain size={12} />
+              <span className="hidden lg:inline">Suggestions</span>
             </button>
             <button
               onClick={onShowTemplates}
-              className={`text-xs px-2 py-1 rounded transition-colors duration-200 flex items-center space-x-1 ${isDarkMode ? 'hover:bg-gray-700 text-gray-400' : 'hover:bg-gray-200 text-gray-600'}`}
-              title="Blogger Templates"
+              className={`text-xs px-3 py-1.5 rounded-full transition-all duration-200 flex items-center space-x-2 border ${
+                isDarkMode 
+                  ? 'hover:bg-gray-700 text-gray-400 border-gray-600 hover:border-gray-500' 
+                  : 'hover:bg-gray-100 text-gray-600 border-gray-300 hover:border-gray-400'
+              }`}
+              title="Templates"
             >
-              <FileCode2 size={10} />
+              <FileCode2 size={12} />
               <span className="hidden lg:inline">Templates</span>
             </button>
             <button
               onClick={onSelectAllCode}
-              className={`text-xs px-2 py-1 rounded transition-colors duration-200 ${isDarkMode ? 'hover:bg-gray-700 text-gray-400' : 'hover:bg-gray-200 text-gray-600'}`}
-              title="Select All"
+              className={`text-xs px-3 py-1.5 rounded-full transition-all duration-200 border ${
+                isDarkMode 
+                  ? 'hover:bg-gray-700 text-gray-400 border-gray-600 hover:border-gray-500' 
+                  : 'hover:bg-gray-100 text-gray-600 border-gray-300 hover:border-gray-400'
+              }`}
+              title="Select All Code"
             >
               <span className="hidden sm:inline">Select All</span>
               <span className="sm:hidden">All</span>
             </button>
-            <span className="text-xs opacity-75 hidden lg:inline">Auto-save</span>
+            <div className="text-xs opacity-60 hidden lg:flex items-center space-x-1">
+              <div className="w-2 h-2 bg-green-400 rounded-full"></div>
+              <span>Auto-save</span>
+            </div>
           </div>
         </div>
       </div>
@@ -192,11 +225,15 @@ const CodeEditor: React.FC<CodeEditorProps> = ({
             letterSpacing: 0.5,
             suggestOnTriggerCharacters: true,
             quickSuggestions: true,
-            // Mobile-specific optimizations
+            // Enhanced for Copilot-like experience
             folding: !isMobile,
             glyphMargin: !isMobile,
             lineDecorationsWidth: isMobile ? 5 : 10,
             lineNumbersMinChars: isMobile ? 2 : 3,
+            cursorBlinking: 'smooth',
+            cursorSmoothCaretAnimation: 'on',
+            smoothScrolling: true,
+            mouseWheelScrollSensitivity: 0.5,
           }}
         />
       </div>

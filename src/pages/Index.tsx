@@ -8,7 +8,7 @@ import MobileAd from '../components/MobileAd';
 import TemplateSelector from '../components/TemplateSelector';
 import ErrorPanel from '../components/ErrorPanel';
 import AISuggestionsPanel from '../components/AISuggestionsPanel';
-import AIChatPanel from '../components/AIChatPanel';
+import DraggableChatPanel from '../components/DraggableChatPanel';
 import { BloggerTemplate } from '../data/bloggerTemplates';
 import { ValidationResult } from '../utils/xmlValidator';
 import { useAICodeAnalysis } from '../hooks/useAICodeAnalysis';
@@ -19,37 +19,83 @@ const Index = () => {
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>HTML Live Preview</title>
+    <title>AI Copilot - Advanced Code Assistant</title>
     <style>
         body {
-            font-family: Arial, sans-serif;
-            margin: 40px;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            margin: 0;
+            padding: 40px;
             background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
             color: white;
             text-align: center;
+            min-height: 100vh;
         }
         .container {
             background: rgba(255, 255, 255, 0.1);
-            padding: 30px;
-            border-radius: 15px;
-            backdrop-filter: blur(10px);
+            padding: 40px;
+            border-radius: 20px;
+            backdrop-filter: blur(15px);
             box-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.37);
+            max-width: 800px;
+            margin: 0 auto;
         }
         h1 {
             margin-bottom: 20px;
-            font-size: 2.5em;
+            font-size: 3em;
+            font-weight: 300;
+            background: linear-gradient(45deg, #fff, #f0f0f0);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
         }
         p {
-            font-size: 1.2em;
-            line-height: 1.6;
+            font-size: 1.3em;
+            line-height: 1.8;
+            opacity: 0.9;
+        }
+        .feature {
+            background: rgba(255, 255, 255, 0.05);
+            padding: 20px;
+            margin: 20px 0;
+            border-radius: 15px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        .ai-badge {
+            display: inline-block;
+            background: linear-gradient(45deg, #4CAF50, #45a049);
+            padding: 8px 16px;
+            border-radius: 20px;
+            font-size: 0.9em;
+            margin: 10px 5px;
         }
     </style>
 </head>
 <body>
     <div class="container">
-        <h1>Welcome to HTML Live Editor!</h1>
-        <p>Start editing the code on the left to see real-time changes here.</p>
-        <p>Now supports Blogger XML templates with error detection!</p>
+        <h1>🤖 AI Copilot</h1>
+        <p>Advanced AI-powered coding assistant with multi-model support</p>
+        
+        <div class="feature">
+            <h3>🚀 Smart Code Generation</h3>
+            <p>Generate clean, production-ready code with auto-closing tags and intelligent suggestions.</p>
+        </div>
+        
+        <div class="feature">
+            <h3>💬 Interactive AI Chat</h3>
+            <p>Draggable chat interface powered by multiple AI models for superior assistance.</p>
+        </div>
+        
+        <div class="feature">
+            <h3>🎯 Multi-Model Support</h3>
+            <p>
+                <span class="ai-badge">DeepSeek V3</span>
+                <span class="ai-badge">OlympicCoder</span>
+                <span class="ai-badge">Qwen2.5</span>
+            </p>
+        </div>
+        
+        <p style="margin-top: 40px; font-size: 1.1em;">
+            Start coding with AI assistance! Open the chat panel and ask for help with HTML, CSS, JavaScript, and more.
+        </p>
     </div>
 </body>
 </html>`);
@@ -297,15 +343,6 @@ const Index = () => {
                   onClose={() => setShowAIAssistant(false)}
                   onApplyCorrection={handleApplyCorrection}
                 />
-
-                {/* DeepSeek AI Chat Panel */}
-                <AIChatPanel
-                  isVisible={showAIChat}
-                  isDarkMode={isDarkMode}
-                  currentCode={htmlCode}
-                  onClose={() => setShowAIChat(false)}
-                  onCodeGenerated={handleCodeGenerated}
-                />
               </div>
             )}
 
@@ -320,6 +357,15 @@ const Index = () => {
           </div>
         </div>
       </div>
+
+      {/* Draggable AI Chat Panel */}
+      <DraggableChatPanel
+        isVisible={showAIChat}
+        isDarkMode={isDarkMode}
+        currentCode={htmlCode}
+        onClose={() => setShowAIChat(false)}
+        onCodeGenerated={handleCodeGenerated}
+      />
 
       {/* Template Selector Modal */}
       <TemplateSelector
