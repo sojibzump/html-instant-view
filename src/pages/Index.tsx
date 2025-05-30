@@ -12,6 +12,7 @@ import DraggableChatPanel from '../components/DraggableChatPanel';
 import { BloggerTemplate } from '../data/bloggerTemplates';
 import { ValidationResult } from '../utils/xmlValidator';
 import { useAICodeAnalysis } from '../hooks/useAICodeAnalysis';
+import { MessageSquare, Code, Zap, Bot } from 'lucide-react';
 
 const Index = () => {
   const [htmlCode, setHtmlCode] = useState(`<!DOCTYPE html>
@@ -300,6 +301,103 @@ const Index = () => {
         onLoadProject={loadProject}
         onExportHTML={exportHTML}
       />
+
+      {/* AI Code Generation CTA Section - Only show on homepage with default content */}
+      {htmlCode.includes('AI Copilot') && htmlCode.includes('Advanced AI-powered coding assistant') && (
+        <div className={`px-4 py-6 border-b ${isDarkMode ? 'bg-gray-800 border-gray-700' : 'bg-blue-50 border-blue-200'}`}>
+          <div className="max-w-6xl mx-auto">
+            <div className="text-center mb-6">
+              <h2 className={`text-2xl font-bold mb-2 ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>
+                🚀 Start Building with AI
+              </h2>
+              <p className={`text-sm ${isDarkMode ? 'text-gray-400' : 'text-gray-600'}`}>
+                Generate production-ready code instantly with our advanced AI models
+              </p>
+            </div>
+            
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+              <button
+                onClick={() => setShowAIChat(true)}
+                className={`p-4 rounded-xl border-2 border-dashed transition-all hover:scale-105 ${
+                  isDarkMode 
+                    ? 'border-blue-600 bg-blue-900/20 hover:bg-blue-900/30 text-blue-400' 
+                    : 'border-blue-400 bg-blue-50 hover:bg-blue-100 text-blue-600'
+                }`}
+              >
+                <div className="flex items-center justify-center mb-3">
+                  <MessageSquare size={32} />
+                </div>
+                <h3 className="font-semibold mb-2">💬 AI Chat Assistant</h3>
+                <p className={`text-xs ${isDarkMode ? 'text-gray-400' : 'text-gray-600'}`}>
+                  Chat with AI to build, debug, and improve your code
+                </p>
+              </button>
+
+              <button
+                onClick={() => setShowTemplates(true)}
+                className={`p-4 rounded-xl border-2 border-dashed transition-all hover:scale-105 ${
+                  isDarkMode 
+                    ? 'border-green-600 bg-green-900/20 hover:bg-green-900/30 text-green-400' 
+                    : 'border-green-400 bg-green-50 hover:bg-green-100 text-green-600'
+                }`}
+              >
+                <div className="flex items-center justify-center mb-3">
+                  <Code size={32} />
+                </div>
+                <h3 className="font-semibold mb-2">⚡ Quick Templates</h3>
+                <p className={`text-xs ${isDarkMode ? 'text-gray-400' : 'text-gray-600'}`}>
+                  Start with pre-built templates for common projects
+                </p>
+              </button>
+
+              <button
+                onClick={() => {
+                  setShowAIChat(true);
+                  // Auto-open quick generator
+                  setTimeout(() => {
+                    const quickGenButton = document.querySelector('[title="Quick Generate"]') as HTMLButtonElement;
+                    quickGenButton?.click();
+                  }, 500);
+                }}
+                className={`p-4 rounded-xl border-2 border-dashed transition-all hover:scale-105 ${
+                  isDarkMode 
+                    ? 'border-purple-600 bg-purple-900/20 hover:bg-purple-900/30 text-purple-400' 
+                    : 'border-purple-400 bg-purple-50 hover:bg-purple-100 text-purple-600'
+                }`}
+              >
+                <div className="flex items-center justify-center mb-3">
+                  <Zap size={32} />
+                </div>
+                <h3 className="font-semibold mb-2">🎯 Instant Generation</h3>
+                <p className={`text-xs ${isDarkMode ? 'text-gray-400' : 'text-gray-600'}`}>
+                  Generate landing pages, dashboards, and more instantly
+                </p>
+              </button>
+            </div>
+
+            <div className="flex justify-center space-x-4">
+              <div className={`inline-flex items-center space-x-2 px-3 py-1.5 rounded-full text-xs ${
+                isDarkMode ? 'bg-gray-700 text-gray-300' : 'bg-gray-200 text-gray-700'
+              }`}>
+                <Bot size={14} />
+                <span>DeepSeek V3</span>
+              </div>
+              <div className={`inline-flex items-center space-x-2 px-3 py-1.5 rounded-full text-xs ${
+                isDarkMode ? 'bg-gray-700 text-gray-300' : 'bg-gray-200 text-gray-700'
+              }`}>
+                <Bot size={14} />
+                <span>OlympicCoder</span>
+              </div>
+              <div className={`inline-flex items-center space-x-2 px-3 py-1.5 rounded-full text-xs ${
+                isDarkMode ? 'bg-gray-700 text-gray-300' : 'bg-gray-200 text-gray-700'
+              }`}>
+                <Bot size={14} />
+                <span>Qwen2.5</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Main Content - Flexible layout */}
       <div className={`flex-1 flex min-h-0 ${isFullscreen ? '' : 'pb-12 sm:pb-16 lg:pb-0'}`}>
