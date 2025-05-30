@@ -1,6 +1,6 @@
 
 import React, { useState, useRef, useEffect } from 'react';
-import { Send, Bot, User, Code, Trash2, X, MessageSquare, Smartphone, Tablet } from 'lucide-react';
+import { Send, Bot, User, Code, Trash2, X, MessageSquare, Smartphone, Tablet, Zap, FileCode, Globe, Palette } from 'lucide-react';
 import { useDeepSeekChat } from '../hooks/useDeepSeekChat';
 import { Textarea } from './ui/textarea';
 
@@ -23,10 +23,19 @@ const AIChatPanel: React.FC<AIChatPanelProps> = ({
   const [codePrompt, setCodePrompt] = useState('');
   const [showCodeGenerator, setShowCodeGenerator] = useState(false);
   const [selectedLanguage, setSelectedLanguage] = useState<'html' | 'css' | 'javascript' | 'xml'>('html');
+  const [selectedTemplate, setSelectedTemplate] = useState<string>('');
   
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
   const { messages, isLoading, sendMessage, generateCode, clearChat } = useDeepSeekChat();
+
+  // Quick generation templates
+  const quickTemplates = [
+    { id: 'landing', name: 'Landing Page', icon: Globe, description: 'Modern responsive landing page' },
+    { id: 'dashboard', name: 'Dashboard', icon: FileCode, description: 'Admin dashboard with charts' },
+    { id: 'portfolio', name: 'Portfolio', icon: User, description: 'Personal portfolio website' },
+    { id: 'ecommerce', name: 'E-commerce', icon: Palette, description: 'Product showcase page' },
+  ];
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -34,7 +43,6 @@ const AIChatPanel: React.FC<AIChatPanelProps> = ({
 
   useEffect(() => {
     if (isVisible && inputRef.current) {
-      // Focus input when panel opens on larger screens
       const isMobile = window.innerWidth < 768;
       if (!isMobile) {
         setTimeout(() => inputRef.current?.focus(), 100);
@@ -48,7 +56,6 @@ const AIChatPanel: React.FC<AIChatPanelProps> = ({
     await sendMessage(input.trim(), currentCode);
     setInput('');
     
-    // Re-focus input after sending message on desktop
     if (window.innerWidth >= 768) {
       setTimeout(() => inputRef.current?.focus(), 100);
     }
@@ -62,10 +69,23 @@ const AIChatPanel: React.FC<AIChatPanelProps> = ({
       onCodeGenerated(generatedCode);
       setCodePrompt('');
       setShowCodeGenerator(false);
-      
-      // Show success feedback
-      const successMessage = `✅ Generated ${selectedLanguage.toUpperCase()} code and applied to editor!`;
-      console.log(successMessage);
+    }
+  };
+
+  const handleQuickGenerate = async (template: string) => {
+    const prompts = {
+      landing: 'Create a modern responsive landing page with hero section, features, and call-to-action',
+      dashboard: 'Create a dashboard layout with sidebar navigation, charts, and data cards',
+      portfolio: 'Create a personal portfolio website with about section, projects grid, and contact form',
+      ecommerce: 'Create an e-commerce product page with gallery, description, and purchase options'
+    };
+    
+    const prompt = prompts[template as keyof typeof prompts];
+    if (prompt) {
+      const generatedCode = await generateCode(prompt, 'html');
+      if (generatedCode) {
+        onCodeGenerated(generatedCode);
+      }
     }
   };
 
@@ -97,8 +117,8 @@ const AIChatPanel: React.FC<AIChatPanelProps> = ({
         <div className="flex items-center space-x-2 md:space-x-3 min-w-0">
           <Bot className={`w-4 h-4 flex-shrink-0 ${isDarkMode ? 'text-blue-400' : 'text-blue-600'}`} />
           <span className={`text-sm font-medium truncate ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>
-            <span className="hidden sm:inline">DeepSeek AI Assistant</span>
-            <span className="sm:hidden">AI Chat</span>
+            <span className="hidden sm:inline">AI Code Generator</span>
+            <span className="sm:hidden">AI Gen</span>
           </span>
           <div className="flex items-center space-x-1 md:space-x-2">
             <button
@@ -106,8 +126,8 @@ const AIChatPanel: React.FC<AIChatPanelProps> = ({
               className={`text-xs px-2 py-1 rounded transition-colors flex items-center space-x-1
                          ${isDarkMode ? 'bg-blue-600 hover:bg-blue-700 text-white' : 'bg-blue-500 hover:bg-blue-600 text-white'}`}
             >
-              <Code size={10} />
-              <span className="hidden sm:inline">Generate</span>
+              <Zap size={10} />
+              <span className="hidden sm:inline">Quick Gen</span>
             </button>
             <button
               onClick={clearChat}
@@ -126,12 +146,46 @@ const AIChatPanel: React.FC<AIChatPanelProps> = ({
         </button>
       </div>
 
-      {/* Code Generator Section */}
+      {/* Quick Templates Section */}
       {showCodeGenerator && (
         <div className={`p-3 md:p-4 border-b flex-shrink-0 ${isDarkMode ? 'border-gray-700 bg-gray-750' : 'border-gray-200 bg-gray-50'}`}>
           <div className="space-y-3">
             <div className="flex items-center justify-between">
-              <div className="flex items-center space-x-2">
+              <h3 className={`text-sm font-medium ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>
+                Quick Generate
+              </h3>
+              <div className="flex items-center space-x-1">
+                <Smartphone className="w-3 h-3 md:hidden text-green-500" />
+                <Tablet className="w-3 h-3 hidden md:block lg:hidden text-blue-500" />
+              </div>
+            </div>
+            
+            {/* Template Grid */}
+            <div className="grid grid-cols-2 gap-2">
+              {quickTemplates.map((template) => (
+                <button
+                  key={template.id}
+                  onClick={() => handleQuickGenerate(template.id)}
+                  disabled={isLoading}
+                  className={`p-3 rounded-lg border text-left transition-all hover:scale-105 disabled:opacity-50
+                             ${isDarkMode 
+                               ? 'bg-gray-700 border-gray-600 hover:bg-gray-600 text-white' 
+                               : 'bg-white border-gray-300 hover:bg-gray-50 text-gray-900'}`}
+                >
+                  <div className="flex items-center space-x-2 mb-1">
+                    <template.icon size={14} className="text-blue-500" />
+                    <span className="text-xs font-medium">{template.name}</span>
+                  </div>
+                  <p className={`text-xs ${isDarkMode ? 'text-gray-400' : 'text-gray-600'}`}>
+                    {template.description}
+                  </p>
+                </button>
+              ))}
+            </div>
+
+            {/* Custom Generation */}
+            <div className="pt-3 border-t border-gray-300 dark:border-gray-600">
+              <div className="flex items-center space-x-2 mb-2">
                 <select
                   value={selectedLanguage}
                   onChange={(e) => setSelectedLanguage(e.target.value as any)}
@@ -143,37 +197,29 @@ const AIChatPanel: React.FC<AIChatPanelProps> = ({
                   <option value="xml">XML</option>
                 </select>
                 <span className={`text-xs hidden sm:inline ${isDarkMode ? 'text-gray-400' : 'text-gray-600'}`}>
-                  Code Generator
+                  Custom Generator
                 </span>
               </div>
-              <div className="flex items-center space-x-1">
-                <Smartphone className="w-3 h-3 md:hidden text-green-500" />
-                <Tablet className="w-3 h-3 hidden md:block lg:hidden text-blue-500" />
+              <div className="flex flex-col sm:flex-row space-y-2 sm:space-y-0 sm:space-x-2">
+                <Textarea
+                  value={codePrompt}
+                  onChange={(e) => setCodePrompt(e.target.value)}
+                  onKeyPress={handleCodeKeyPress}
+                  placeholder="Describe what you want to build..."
+                  className={`flex-1 text-sm ${isDarkMode ? 'bg-gray-700 border-gray-600 text-white placeholder-gray-400' : 'bg-white border-gray-300 placeholder-gray-500'}`}
+                  rows={2}
+                />
+                <button
+                  onClick={handleGenerateCode}
+                  disabled={!codePrompt.trim() || isLoading}
+                  className="px-3 py-2 bg-green-500 text-white rounded hover:bg-green-600 disabled:opacity-50 disabled:cursor-not-allowed
+                            flex-shrink-0 flex items-center justify-center space-x-1"
+                >
+                  <Code size={14} />
+                  <span>Generate</span>
+                </button>
               </div>
             </div>
-            <div className="flex flex-col sm:flex-row space-y-2 sm:space-y-0 sm:space-x-2">
-              <Textarea
-                value={codePrompt}
-                onChange={(e) => setCodePrompt(e.target.value)}
-                onKeyPress={handleCodeKeyPress}
-                placeholder="Describe the code you want to generate..."
-                className={`flex-1 text-sm ${isDarkMode ? 'bg-gray-700 border-gray-600 text-white placeholder-gray-400' : 'bg-white border-gray-300 placeholder-gray-500'}`}
-                rows={2}
-              />
-              <button
-                onClick={handleGenerateCode}
-                disabled={!codePrompt.trim() || isLoading}
-                className="px-3 py-2 bg-green-500 text-white rounded hover:bg-green-600 disabled:opacity-50 disabled:cursor-not-allowed
-                          flex-shrink-0 flex items-center justify-center space-x-1"
-              >
-                <Code size={14} />
-                <span>Generate</span>
-              </button>
-            </div>
-            <p className={`text-xs ${isDarkMode ? 'text-gray-500' : 'text-gray-400'}`}>
-              <span className="hidden sm:inline">Press Ctrl+Enter to generate • </span>
-              Code will auto-paste to editor
-            </p>
           </div>
         </div>
       )}
@@ -183,13 +229,13 @@ const AIChatPanel: React.FC<AIChatPanelProps> = ({
         {messages.length === 0 ? (
           <div className={`text-center py-8 ${isDarkMode ? 'text-gray-400' : 'text-gray-500'}`}>
             <MessageSquare className="w-8 h-8 mx-auto mb-2 opacity-50" />
-            <p className="text-sm">Ask me anything about your code!</p>
-            <p className="text-xs mt-1">I can help with debugging, improvements, and generating new code.</p>
+            <p className="text-sm">Start building with AI assistance!</p>
+            <p className="text-xs mt-1">Generate code instantly or chat for custom help.</p>
             <div className="mt-4 space-y-1">
-              <p className="text-xs opacity-75">💡 Try asking:</p>
+              <p className="text-xs opacity-75">💡 Try quick templates or ask:</p>
               <p className="text-xs opacity-60">"Create a responsive navigation bar"</p>
-              <p className="text-xs opacity-60">"Fix any errors in my code"</p>
-              <p className="text-xs opacity-60">"Make this design mobile-friendly"</p>
+              <p className="text-xs opacity-60">"Add animations to my page"</p>
+              <p className="text-xs opacity-60">"Fix accessibility issues"</p>
             </div>
           </div>
         ) : (
@@ -201,7 +247,7 @@ const AIChatPanel: React.FC<AIChatPanelProps> = ({
                 </div>
                 <div className="flex-1 min-w-0">
                   <div className={`text-xs mb-1 ${isDarkMode ? 'text-gray-400' : 'text-gray-500'}`}>
-                    {message.role === 'user' ? 'You' : 'DeepSeek'} • {message.timestamp.toLocaleTimeString()}
+                    {message.role === 'user' ? 'You' : 'AI Assistant'} • {message.timestamp.toLocaleTimeString()}
                   </div>
                   <div className={`text-sm p-3 rounded-lg break-words ${message.role === 'user' 
                     ? (isDarkMode ? 'bg-blue-900 text-blue-100' : 'bg-blue-100 text-blue-900')
@@ -219,12 +265,12 @@ const AIChatPanel: React.FC<AIChatPanelProps> = ({
                 </div>
                 <div className="flex-1">
                   <div className={`text-xs mb-1 ${isDarkMode ? 'text-gray-400' : 'text-gray-500'}`}>
-                    DeepSeek • Thinking...
+                    AI Assistant • Generating...
                   </div>
                   <div className={`text-sm p-3 rounded-lg ${isDarkMode ? 'bg-gray-700' : 'bg-gray-100'}`}>
                     <div className="flex items-center space-x-2">
                       <div className="animate-spin w-3 h-3 border-2 border-green-500 border-t-transparent rounded-full"></div>
-                      <span>Generating response...</span>
+                      <span>Creating your code...</span>
                     </div>
                   </div>
                 </div>
@@ -243,7 +289,7 @@ const AIChatPanel: React.FC<AIChatPanelProps> = ({
             value={input}
             onChange={(e) => setInput(e.target.value)}
             onKeyPress={handleKeyPress}
-            placeholder="Ask about your code, request improvements, or get help..."
+            placeholder="Ask AI to build, modify, or explain code..."
             className={`flex-1 text-sm ${isDarkMode ? 'bg-gray-700 border-gray-600 text-white placeholder-gray-400' : 'bg-white border-gray-300 placeholder-gray-500'}`}
             rows={2}
           />
@@ -259,7 +305,7 @@ const AIChatPanel: React.FC<AIChatPanelProps> = ({
         </div>
         <p className={`text-xs mt-1 ${isDarkMode ? 'text-gray-500' : 'text-gray-400'}`}>
           <span className="hidden sm:inline">Press Enter to send • </span>
-          AI-powered code assistance
+          AI-powered code generation like bolt.new
         </p>
       </div>
     </div>

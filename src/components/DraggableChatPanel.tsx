@@ -1,6 +1,6 @@
 
 import React, { useState, useRef, useEffect, useCallback } from 'react';
-import { Send, Bot, User, Code, Trash2, X, MessageSquare, Maximize2, Minimize2, Move } from 'lucide-react';
+import { Send, Bot, User, Code, Trash2, X, MessageSquare, Maximize2, Minimize2, Move, Zap, FileCode, Globe, Palette } from 'lucide-react';
 import { useDeepSeekChat } from '../hooks/useDeepSeekChat';
 import { Textarea } from './ui/textarea';
 
@@ -24,7 +24,7 @@ const DraggableChatPanel: React.FC<DraggableChatPanelProps> = ({
   const [showCodeGenerator, setShowCodeGenerator] = useState(false);
   const [selectedLanguage, setSelectedLanguage] = useState<'html' | 'css' | 'javascript' | 'xml'>('html');
   const [isFullscreen, setIsFullscreen] = useState(false);
-  const [position, setPosition] = useState({ x: window.innerWidth - 400, y: 100 });
+  const [position, setPosition] = useState({ x: window.innerWidth - 420, y: 100 });
   const [isDragging, setIsDragging] = useState(false);
   const [dragOffset, setDragOffset] = useState({ x: 0, y: 0 });
   
@@ -34,6 +34,14 @@ const DraggableChatPanel: React.FC<DraggableChatPanelProps> = ({
   const inputRef = useRef<HTMLTextAreaElement>(null);
   
   const { messages, isLoading, sendMessage, generateCode, clearChat } = useDeepSeekChat();
+
+  // Quick generation templates
+  const quickTemplates = [
+    { id: 'landing', name: 'Landing Page', icon: Globe, description: 'Modern responsive landing page' },
+    { id: 'dashboard', name: 'Dashboard', icon: FileCode, description: 'Admin dashboard with charts' },
+    { id: 'portfolio', name: 'Portfolio', icon: User, description: 'Personal portfolio website' },
+    { id: 'ecommerce', name: 'E-commerce', icon: Palette, description: 'Product showcase page' },
+  ];
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -61,7 +69,7 @@ const DraggableChatPanel: React.FC<DraggableChatPanelProps> = ({
   const handleMouseMove = useCallback((e: MouseEvent) => {
     if (!isDragging) return;
     
-    const newX = Math.max(0, Math.min(window.innerWidth - 400, e.clientX - dragOffset.x));
+    const newX = Math.max(0, Math.min(window.innerWidth - 420, e.clientX - dragOffset.x));
     const newY = Math.max(0, Math.min(window.innerHeight - 200, e.clientY - dragOffset.y));
     
     setPosition({ x: newX, y: newY });
@@ -104,6 +112,23 @@ const DraggableChatPanel: React.FC<DraggableChatPanelProps> = ({
     }
   };
 
+  const handleQuickGenerate = async (template: string) => {
+    const prompts = {
+      landing: 'Create a modern responsive landing page with hero section, features, and call-to-action',
+      dashboard: 'Create a dashboard layout with sidebar navigation, charts, and data cards',
+      portfolio: 'Create a personal portfolio website with about section, projects grid, and contact form',
+      ecommerce: 'Create an e-commerce product page with gallery, description, and purchase options'
+    };
+    
+    const prompt = prompts[template as keyof typeof prompts];
+    if (prompt) {
+      const generatedCode = await generateCode(prompt, 'html');
+      if (generatedCode) {
+        onCodeGenerated(generatedCode);
+      }
+    }
+  };
+
   const handleKeyPress = (e: React.KeyboardEvent) => {
     if (e.key === 'Enter' && !e.shiftKey) {
       e.preventDefault();
@@ -123,8 +148,8 @@ const DraggableChatPanel: React.FC<DraggableChatPanelProps> = ({
         position: 'fixed' as const, 
         top: position.y, 
         left: position.x, 
-        width: '400px', 
-        height: '500px',
+        width: '420px', 
+        height: '600px',
         zIndex: 50,
         boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.25)',
         borderRadius: '12px',
@@ -152,7 +177,7 @@ const DraggableChatPanel: React.FC<DraggableChatPanelProps> = ({
         <div className="flex items-center space-x-3">
           <div className="flex items-center space-x-2">
             <Bot className="w-5 h-5 text-blue-500" />
-            <span className="font-semibold">AI Copilot</span>
+            <span className="font-semibold">AI Code Generator</span>
           </div>
           <Move className="w-4 h-4 opacity-50" />
         </div>
@@ -161,9 +186,9 @@ const DraggableChatPanel: React.FC<DraggableChatPanelProps> = ({
           <button
             onClick={() => setShowCodeGenerator(!showCodeGenerator)}
             className="p-1.5 rounded hover:bg-opacity-20 hover:bg-gray-500 transition-colors"
-            title="Code Generator"
+            title="Quick Generate"
           >
-            <Code size={16} />
+            <Zap size={16} />
           </button>
           <button
             onClick={clearChat}
@@ -189,46 +214,74 @@ const DraggableChatPanel: React.FC<DraggableChatPanelProps> = ({
         </div>
       </div>
 
-      {/* Code Generator */}
+      {/* Quick Generator */}
       {showCodeGenerator && (
         <div className={`p-4 border-b ${isDarkMode ? 'border-gray-700 bg-gray-800' : 'border-gray-200 bg-gray-50'}`}>
           <div className="space-y-3">
-            <div className="flex items-center space-x-2">
-              <select
-                value={selectedLanguage}
-                onChange={(e) => setSelectedLanguage(e.target.value as any)}
-                className={`px-3 py-1.5 rounded border text-sm ${
-                  isDarkMode 
-                    ? 'bg-gray-700 border-gray-600 text-white' 
-                    : 'bg-white border-gray-300 text-gray-900'
-                }`}
-              >
-                <option value="html">HTML</option>
-                <option value="css">CSS</option>
-                <option value="javascript">JavaScript</option>
-                <option value="xml">XML</option>
-              </select>
-              <span className="text-sm font-medium">Code Generator</span>
+            <h3 className="text-sm font-medium">Quick Generate</h3>
+            
+            {/* Template Grid */}
+            <div className="grid grid-cols-2 gap-2">
+              {quickTemplates.map((template) => (
+                <button
+                  key={template.id}
+                  onClick={() => handleQuickGenerate(template.id)}
+                  disabled={isLoading}
+                  className={`p-2 rounded-lg border text-left transition-all hover:scale-105 disabled:opacity-50
+                             ${isDarkMode 
+                               ? 'bg-gray-700 border-gray-600 hover:bg-gray-600 text-white' 
+                               : 'bg-white border-gray-300 hover:bg-gray-50 text-gray-900'}`}
+                >
+                  <div className="flex items-center space-x-1 mb-1">
+                    <template.icon size={12} className="text-blue-500" />
+                    <span className="text-xs font-medium">{template.name}</span>
+                  </div>
+                  <p className={`text-xs ${isDarkMode ? 'text-gray-400' : 'text-gray-600'}`}>
+                    {template.description}
+                  </p>
+                </button>
+              ))}
             </div>
-            <div className="flex space-x-2">
-              <Textarea
-                value={codePrompt}
-                onChange={(e) => setCodePrompt(e.target.value)}
-                placeholder="Describe the code you want to generate..."
-                className={`flex-1 text-sm ${
-                  isDarkMode 
-                    ? 'bg-gray-700 border-gray-600 text-white placeholder-gray-400' 
-                    : 'bg-white border-gray-300 placeholder-gray-500'
-                }`}
-                rows={2}
-              />
-              <button
-                onClick={handleGenerateCode}
-                disabled={!codePrompt.trim() || isLoading}
-                className="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600 disabled:opacity-50 transition-colors"
-              >
-                Generate
-              </button>
+
+            {/* Custom Generation */}
+            <div className="pt-3 border-t border-gray-300 dark:border-gray-600">
+              <div className="flex items-center space-x-2 mb-2">
+                <select
+                  value={selectedLanguage}
+                  onChange={(e) => setSelectedLanguage(e.target.value as any)}
+                  className={`px-3 py-1.5 rounded border text-sm ${
+                    isDarkMode 
+                      ? 'bg-gray-700 border-gray-600 text-white' 
+                      : 'bg-white border-gray-300 text-gray-900'
+                  }`}
+                >
+                  <option value="html">HTML</option>
+                  <option value="css">CSS</option>
+                  <option value="javascript">JavaScript</option>
+                  <option value="xml">XML</option>
+                </select>
+                <span className="text-sm font-medium">Custom</span>
+              </div>
+              <div className="flex space-x-2">
+                <Textarea
+                  value={codePrompt}
+                  onChange={(e) => setCodePrompt(e.target.value)}
+                  placeholder="Describe what you want to build..."
+                  className={`flex-1 text-sm ${
+                    isDarkMode 
+                      ? 'bg-gray-700 border-gray-600 text-white placeholder-gray-400' 
+                      : 'bg-white border-gray-300 placeholder-gray-500'
+                  }`}
+                  rows={2}
+                />
+                <button
+                  onClick={handleGenerateCode}
+                  disabled={!codePrompt.trim() || isLoading}
+                  className="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600 disabled:opacity-50 transition-colors"
+                >
+                  Generate
+                </button>
+              </div>
             </div>
           </div>
         </div>
@@ -239,12 +292,12 @@ const DraggableChatPanel: React.FC<DraggableChatPanelProps> = ({
         {messages.length === 0 ? (
           <div className="text-center py-8 opacity-60">
             <MessageSquare className="w-12 h-12 mx-auto mb-4 opacity-40" />
-            <h3 className="font-medium mb-2">AI Copilot Assistant</h3>
-            <p className="text-sm mb-4">Ask me anything about your code!</p>
+            <h3 className="font-medium mb-2">AI Code Generator</h3>
+            <p className="text-sm mb-4">Build anything with AI assistance!</p>
             <div className="space-y-2 text-xs">
-              <p>💡 "Create a responsive navigation bar"</p>
-              <p>🔧 "Fix any errors in my code"</p>
-              <p>📱 "Make this design mobile-friendly"</p>
+              <p>🚀 "Create a landing page"</p>
+              <p>📊 "Build a dashboard"</p>
+              <p>🎨 "Design a portfolio"</p>
             </div>
           </div>
         ) : (
@@ -258,7 +311,7 @@ const DraggableChatPanel: React.FC<DraggableChatPanelProps> = ({
                 </div>
                 <div className="flex-1 min-w-0">
                   <div className="text-xs opacity-60 mb-1">
-                    {message.role === 'user' ? 'You' : 'AI Copilot'} • {message.timestamp.toLocaleTimeString()}
+                    {message.role === 'user' ? 'You' : 'AI Generator'} • {message.timestamp.toLocaleTimeString()}
                   </div>
                   <div className={`text-sm p-3 rounded-lg ${
                     message.role === 'user' 
@@ -276,11 +329,11 @@ const DraggableChatPanel: React.FC<DraggableChatPanelProps> = ({
                   <Bot size={14} className="text-white" />
                 </div>
                 <div className="flex-1">
-                  <div className="text-xs opacity-60 mb-1">AI Copilot • Thinking...</div>
+                  <div className="text-xs opacity-60 mb-1">AI Generator • Creating...</div>
                   <div className={`text-sm p-3 rounded-lg ${isDarkMode ? 'bg-gray-800' : 'bg-gray-100'}`}>
                     <div className="flex items-center space-x-2">
                       <div className="animate-spin w-4 h-4 border-2 border-green-500 border-t-transparent rounded-full"></div>
-                      <span>Generating response...</span>
+                      <span>Generating your code...</span>
                     </div>
                   </div>
                 </div>
@@ -299,7 +352,7 @@ const DraggableChatPanel: React.FC<DraggableChatPanelProps> = ({
             value={input}
             onChange={(e) => setInput(e.target.value)}
             onKeyPress={handleKeyPress}
-            placeholder="Ask AI Copilot for help with your code..."
+            placeholder="Ask AI to build or modify your code..."
             className={`flex-1 text-sm ${
               isDarkMode 
                 ? 'bg-gray-800 border-gray-600 text-white placeholder-gray-400' 
@@ -315,7 +368,7 @@ const DraggableChatPanel: React.FC<DraggableChatPanelProps> = ({
             <Send size={16} />
           </button>
         </div>
-        <p className="text-xs opacity-60 mt-2">Press Enter to send • AI-powered code assistance</p>
+        <p className="text-xs opacity-60 mt-2">Press Enter to send • AI-powered like bolt.new</p>
       </div>
     </div>
   );
