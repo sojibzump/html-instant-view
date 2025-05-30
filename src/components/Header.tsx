@@ -48,74 +48,74 @@ const Header: React.FC<HeaderProps> = ({
             Header Ad Zone 728x90
           </div>
 
-          {/* Action Buttons - Responsive layout */}
+          {/* Action Buttons - Responsive layout with larger touch targets */}
           <div className="flex items-center space-x-1 sm:space-x-2">
-            {/* Primary actions - always visible */}
+            {/* Primary actions - always visible with larger touch targets */}
             <button
               onClick={onCopyToClipboard}
-              className={`p-1 sm:p-1.5 lg:p-2 rounded-lg transition-all duration-200 ${isDarkMode ? 'hover:bg-gray-700 text-gray-300' : 'hover:bg-gray-100 text-gray-600'}`}
+              className={`p-2 sm:p-3 rounded-lg transition-all duration-200 min-w-[44px] min-h-[44px] flex items-center justify-center ${isDarkMode ? 'hover:bg-gray-700 text-gray-300' : 'hover:bg-gray-100 text-gray-600'}`}
               title="Copy Code"
             >
-              <Copy size={14} className="sm:w-4 sm:h-4 lg:w-5 lg:h-5" />
+              <Copy size={18} className="sm:w-5 sm:h-5" />
             </button>
             
             <button
               onClick={onExportHTML}
-              className={`p-1 sm:p-1.5 lg:p-2 rounded-lg transition-all duration-200 ${isDarkMode ? 'hover:bg-gray-700 text-gray-300' : 'hover:bg-gray-100 text-gray-600'}`}
+              className={`p-2 sm:p-3 rounded-lg transition-all duration-200 min-w-[44px] min-h-[44px] flex items-center justify-center ${isDarkMode ? 'hover:bg-gray-700 text-gray-300' : 'hover:bg-gray-100 text-gray-600'}`}
               title="Download HTML"
             >
-              <Download size={14} className="sm:w-4 sm:h-4 lg:w-5 lg:h-5" />
+              <Download size={18} className="sm:w-5 sm:h-5" />
             </button>
 
             {/* Secondary actions - hidden on smallest screens */}
             <button
               onClick={onSelectAllCode}
-              className={`hidden xs:flex p-1 sm:p-1.5 lg:p-2 rounded-lg transition-all duration-200 ${isDarkMode ? 'hover:bg-gray-700 text-gray-300' : 'hover:bg-gray-100 text-gray-600'}`}
+              className={`hidden xs:flex p-2 sm:p-3 rounded-lg transition-all duration-200 min-w-[44px] min-h-[44px] items-center justify-center ${isDarkMode ? 'hover:bg-gray-700 text-gray-300' : 'hover:bg-gray-100 text-gray-600'}`}
               title="Select All Code"
             >
-              <MousePointer size={14} className="sm:w-4 sm:h-4 lg:w-5 lg:h-5" />
+              <MousePointer size={18} className="sm:w-5 sm:h-5" />
             </button>
 
             <button
               onClick={onClearCode}
-              className={`hidden sm:flex p-1 sm:p-1.5 lg:p-2 rounded-lg transition-all duration-200 ${isDarkMode ? 'hover:bg-gray-700 text-gray-300' : 'hover:bg-gray-100 text-gray-600'}`}
+              className={`hidden sm:flex p-2 sm:p-3 rounded-lg transition-all duration-200 min-w-[44px] min-h-[44px] items-center justify-center ${isDarkMode ? 'hover:bg-gray-700 text-gray-300' : 'hover:bg-gray-100 text-gray-600'}`}
               title="Clear Code"
             >
-              <Trash2 size={14} className="sm:w-4 sm:h-4 lg:w-5 lg:h-5" />
+              <Trash2 size={18} className="sm:w-5 sm:h-5" />
             </button>
 
             {/* Project actions - hidden on mobile */}
             <button
               onClick={onSaveProject}
-              className={`hidden md:flex p-1 sm:p-1.5 lg:p-2 rounded-lg transition-all duration-200 ${isDarkMode ? 'hover:bg-gray-700 text-gray-300' : 'hover:bg-gray-100 text-gray-600'}`}
+              className={`hidden md:flex p-2 sm:p-3 rounded-lg transition-all duration-200 min-w-[44px] min-h-[44px] items-center justify-center ${isDarkMode ? 'hover:bg-gray-700 text-gray-300' : 'hover:bg-gray-100 text-gray-600'}`}
               title="Save Project"
             >
-              <Save size={14} className="sm:w-4 sm:h-4 lg:w-5 lg:h-5" />
+              <Save size={18} className="sm:w-5 sm:h-5" />
             </button>
             
             <button
               onClick={onLoadProject}
-              className={`hidden md:flex p-1 sm:p-1.5 lg:p-2 rounded-lg transition-all duration-200 ${isDarkMode ? 'hover:bg-gray-700 text-gray-300' : 'hover:bg-gray-100 text-gray-600'}`}
+              className={`hidden md:flex p-2 sm:p-3 rounded-lg transition-all duration-200 min-w-[44px] min-h-[44px] items-center justify-center ${isDarkMode ? 'hover:bg-gray-700 text-gray-300' : 'hover:bg-gray-100 text-gray-600'}`}
               title="Load Project"
             >
-              <FolderOpen size={14} className="sm:w-4 sm:h-4 lg:w-5 lg:h-5" />
+              <FolderOpen size={18} className="sm:w-5 sm:h-5" />
             </button>
 
-            {/* Essential controls - always visible */}
+            {/* Essential controls - always visible with larger touch targets */}
             <button
               onClick={onToggleFullscreen}
-              className={`p-1 sm:p-1.5 lg:p-2 rounded-lg transition-all duration-200 ${isDarkMode ? 'hover:bg-gray-700 text-gray-300' : 'hover:bg-gray-100 text-gray-600'}`}
+              className={`p-2 sm:p-3 rounded-lg transition-all duration-200 min-w-[44px] min-h-[44px] flex items-center justify-center ${isDarkMode ? 'hover:bg-gray-700 text-gray-300' : 'hover:bg-gray-100 text-gray-600'}`}
               title={isFullscreen ? "Exit Full Preview" : "Full Preview Mode"}
             >
-              {isFullscreen ? <Minimize2 size={14} className="sm:w-4 sm:h-4 lg:w-5 lg:h-5" /> : <Maximize2 size={14} className="sm:w-4 sm:h-4 lg:w-5 lg:h-5" />}
+              {isFullscreen ? <Minimize2 size={18} className="sm:w-5 sm:h-5" /> : <Maximize2 size={18} className="sm:w-5 sm:h-5" />}
             </button>
             
             <button
               onClick={onToggleTheme}
-              className={`p-1 sm:p-1.5 lg:p-2 rounded-lg transition-all duration-200 ${isDarkMode ? 'hover:bg-gray-700 text-gray-300' : 'hover:bg-gray-100 text-gray-600'}`}
+              className={`p-2 sm:p-3 rounded-lg transition-all duration-200 min-w-[44px] min-h-[44px] flex items-center justify-center ${isDarkMode ? 'hover:bg-gray-700 text-gray-300' : 'hover:bg-gray-100 text-gray-600'}`}
               title="Toggle Theme"
             >
-              {isDarkMode ? <Sun size={14} className="sm:w-4 sm:h-4 lg:w-5 lg:h-5" /> : <Moon size={14} className="sm:w-4 sm:h-4 lg:w-5 lg:h-5" />}
+              {isDarkMode ? <Sun size={18} className="sm:w-5 sm:h-5" /> : <Moon size={18} className="sm:w-5 sm:h-5" />}
             </button>
           </div>
         </div>

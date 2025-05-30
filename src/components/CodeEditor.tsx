@@ -1,8 +1,8 @@
+
 import React, { useEffect, useState, useCallback, useMemo } from 'react';
 import Editor from '@monaco-editor/react';
-import { MousePointer, FileCode2, AlertTriangle, Brain, MessageSquare, Smartphone, Tablet } from 'lucide-react';
+import { MousePointer, FileCode2, AlertTriangle, Smartphone, Tablet } from 'lucide-react';
 import { validateXML, detectLanguage, ValidationResult } from '../utils/xmlValidator';
-import { useAICodeAnalysis } from '../hooks/useAICodeAnalysis';
 
 interface CodeEditorProps {
   htmlCode: string;
@@ -35,8 +35,6 @@ const CodeEditor: React.FC<CodeEditorProps> = ({
   const [validationResult, setValidationResult] = useState<ValidationResult>({ isValid: true, errors: [] });
   const [isMobile, setIsMobile] = useState(window.innerWidth < 768);
   const [isTablet, setIsTablet] = useState(window.innerWidth >= 768 && window.innerWidth < 1024);
-  
-  const { isAnalyzing, analysis, analyzeCode } = useAICodeAnalysis();
 
   const detectedLanguage = useMemo(() => detectLanguage(htmlCode), [htmlCode]);
 
@@ -62,19 +60,14 @@ const CodeEditor: React.FC<CodeEditorProps> = ({
       setValidationResult(result);
       onValidationChange(result);
     }
-
-    // Trigger AI analysis
-    analyzeCode(htmlCode, detectedLanguage);
-  }, [htmlCode, detectedLanguage, onValidationChange, analyzeCode]);
+  }, [htmlCode, detectedLanguage, onValidationChange]);
 
   const errorCount = validationResult.errors.filter(e => e.type === 'error').length;
   const warningCount = validationResult.errors.filter(e => e.type === 'warning').length;
-  const aiIssuesCount = analysis?.errors.length || 0;
-  const aiSuggestionsCount = analysis?.suggestions.length || 0;
 
   const getDeviceIcon = () => {
-    if (isMobile) return <Smartphone size={12} className="text-green-500" />;
-    if (isTablet) return <Tablet size={12} className="text-blue-500" />;
+    if (isMobile) return <Smartphone size={16} className="text-green-500" />;
+    if (isTablet) return <Tablet size={16} className="text-blue-500" />;
     return null;
   };
 
@@ -85,7 +78,7 @@ const CodeEditor: React.FC<CodeEditorProps> = ({
           ? 'bg-gray-900 border-gray-700 text-gray-300' 
           : 'bg-white border-gray-200 text-gray-700'
       }`}>
-        <div className="flex flex-col space-y-2 sm:space-y-3">
+        <div className="flex flex-col space-y-2">
           {/* Top Row - Title and Device Info */}
           <div className="flex items-center justify-between">
             <div className="flex items-center space-x-2 sm:space-x-3 min-w-0">
@@ -95,49 +88,17 @@ const CodeEditor: React.FC<CodeEditorProps> = ({
                 </span>
                 {getDeviceIcon()}
               </div>
-              
-              {/* AI Ready Badge - Always visible */}
-              <div className="flex items-center space-x-1 px-2 py-1 bg-blue-500 bg-opacity-10 rounded-full border border-blue-500 border-opacity-20">
-                <div className="w-2 h-2 bg-green-400 rounded-full animate-pulse"></div>
-                <span className="text-xs font-medium text-blue-500">AI</span>
-              </div>
-            </div>
-            
-            {/* Mobile AI Quick Actions */}
-            <div className="flex items-center space-x-1 sm:hidden">
-              <button
-                onClick={onShowDeepSeekChat}
-                className={`p-2 rounded-full transition-all duration-200 border ${
-                  isDarkMode 
-                    ? 'hover:bg-gray-700 text-gray-400 border-gray-600' 
-                    : 'hover:bg-gray-100 text-gray-600 border-gray-300'
-                }`}
-                title="AI Copilot"
-              >
-                <MessageSquare size={14} />
-              </button>
-              <button
-                onClick={onShowAISuggestions}
-                className={`p-2 rounded-full transition-all duration-200 border ${
-                  isDarkMode 
-                    ? 'hover:bg-gray-700 text-gray-400 border-gray-600' 
-                    : 'hover:bg-gray-100 text-gray-600 border-gray-300'
-                }`}
-                title="AI Suggestions"
-              >
-                <Brain size={14} />
-              </button>
             </div>
           </div>
 
-          {/* Status Row - Validation and AI Analysis Results */}
+          {/* Status Row - Validation Results Only */}
           <div className="flex flex-wrap items-center gap-2">
             {/* Validation Results */}
             {language === 'xml' && (
               <>
                 {errorCount > 0 && (
                   <span className="text-xs px-2 py-1 bg-red-500 bg-opacity-10 text-red-600 rounded-full border border-red-500 border-opacity-20 flex items-center space-x-1">
-                    <AlertTriangle size={10} />
+                    <AlertTriangle size={12} />
                     <span>{errorCount} error{errorCount !== 1 ? 's' : ''}</span>
                   </span>
                 )}
@@ -153,57 +114,11 @@ const CodeEditor: React.FC<CodeEditorProps> = ({
                 )}
               </>
             )}
-            
-            {/* AI Analysis Results - Always visible when available */}
-            {(aiIssuesCount > 0 || aiSuggestionsCount > 0) && (
-              <button
-                onClick={onShowAISuggestions}
-                className="text-xs px-2 py-1 bg-blue-500 bg-opacity-10 text-blue-600 rounded-full border border-blue-500 border-opacity-20 flex items-center space-x-1 hover:bg-opacity-20 transition-all"
-              >
-                <Brain size={10} />
-                <span>{aiIssuesCount + aiSuggestionsCount} insights</span>
-              </button>
-            )}
-            
-            {/* AI Analysis Loading */}
-            {isAnalyzing && (
-              <div className="flex items-center space-x-2 px-2 py-1 bg-blue-500 bg-opacity-10 rounded-full border border-blue-500 border-opacity-20">
-                <div className="animate-spin w-3 h-3 border-2 border-blue-500 border-t-transparent rounded-full"></div>
-                <span className="text-xs text-blue-600">AI analyzing...</span>
-              </div>
-            )}
           </div>
 
           {/* Action Buttons Row - Responsive layout */}
           <div className="flex items-center justify-between flex-wrap gap-2">
             <div className="flex items-center space-x-1 sm:space-x-2">
-              {/* Desktop AI Actions */}
-              <div className="hidden sm:flex items-center space-x-2">
-                <button
-                  onClick={onShowDeepSeekChat}
-                  className={`text-xs px-2 sm:px-3 py-1.5 rounded-full transition-all duration-200 flex items-center space-x-1 sm:space-x-2 border ${
-                    isDarkMode 
-                      ? 'hover:bg-gray-700 text-gray-400 border-gray-600 hover:border-gray-500' 
-                      : 'hover:bg-gray-100 text-gray-600 border-gray-300 hover:border-gray-400'
-                  }`}
-                >
-                  <MessageSquare size={12} />
-                  <span className="font-medium">AI Copilot</span>
-                </button>
-                <button
-                  onClick={onShowAISuggestions}
-                  className={`text-xs px-2 sm:px-3 py-1.5 rounded-full transition-all duration-200 flex items-center space-x-1 sm:space-x-2 border ${
-                    isDarkMode 
-                      ? 'hover:bg-gray-700 text-gray-400 border-gray-600 hover:border-gray-500' 
-                      : 'hover:bg-gray-100 text-gray-600 border-gray-300 hover:border-gray-400'
-                  }`}
-                >
-                  <Brain size={12} />
-                  <span>Suggestions</span>
-                </button>
-              </div>
-
-              {/* Other Action Buttons */}
               <button
                 onClick={onShowTemplates}
                 className={`text-xs px-2 sm:px-3 py-1.5 rounded-full transition-all duration-200 flex items-center space-x-1 border ${
@@ -212,7 +127,7 @@ const CodeEditor: React.FC<CodeEditorProps> = ({
                     : 'hover:bg-gray-100 text-gray-600 border-gray-300 hover:border-gray-400'
                 }`}
               >
-                <FileCode2 size={12} />
+                <FileCode2 size={16} />
                 <span className="hidden sm:inline">Templates</span>
               </button>
               <button
@@ -223,7 +138,8 @@ const CodeEditor: React.FC<CodeEditorProps> = ({
                     : 'hover:bg-gray-100 text-gray-600 border-gray-300 hover:border-gray-400'
                 }`}
               >
-                <span>Select All</span>
+                <MousePointer size={16} className="sm:hidden" />
+                <span className="hidden sm:inline">Select All</span>
               </button>
             </div>
             
