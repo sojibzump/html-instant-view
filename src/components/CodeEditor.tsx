@@ -1,4 +1,3 @@
-
 import React, { useEffect, useState, useCallback, useMemo } from 'react';
 import Editor from '@monaco-editor/react';
 import { MousePointer, FileCode2, AlertTriangle, Smartphone, Tablet } from 'lucide-react';
@@ -13,9 +12,6 @@ interface CodeEditorProps {
   onSelectAllCode: () => void;
   onShowTemplates: () => void;
   onValidationChange: (result: ValidationResult) => void;
-  onShowAISuggestions: () => void;
-  onShowDeepSeekChat: () => void;
-  onApplyCorrection: (correction: any) => void;
 }
 
 const CodeEditor: React.FC<CodeEditorProps> = ({
@@ -27,9 +23,6 @@ const CodeEditor: React.FC<CodeEditorProps> = ({
   onSelectAllCode,
   onShowTemplates,
   onValidationChange,
-  onShowAISuggestions,
-  onShowDeepSeekChat,
-  onApplyCorrection,
 }) => {
   const [language, setLanguage] = useState<'html' | 'xml'>('html');
   const [validationResult, setValidationResult] = useState<ValidationResult>({ isValid: true, errors: [] });
