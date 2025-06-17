@@ -10,6 +10,10 @@ import ErrorPanel from '../components/ErrorPanel';
 import FullscreenAd from '../components/FullscreenAd';
 import KeyboardShortcuts from '../components/KeyboardShortcuts';
 import ExportOptions from '../components/ExportOptions';
+import CodeFormatter from '../components/CodeFormatter';
+import AutoSaveSettings from '../components/AutoSaveSettings';
+import CodeSnippets from '../components/CodeSnippets';
+import EnhancedToolbar from '../components/EnhancedToolbar';
 import { BloggerTemplate } from '../data/bloggerTemplates';
 import { ValidationResult } from '../utils/xmlValidator';
 import { adRevenueSystem } from '../utils/adRevenueSystem';
@@ -100,6 +104,15 @@ const Index = () => {
   const [showFullscreenAd, setShowFullscreenAd] = useState(false);
   const [showKeyboardShortcuts, setShowKeyboardShortcuts] = useState(false);
   const [showExportOptions, setShowExportOptions] = useState(false);
+  
+  // New additional features state
+  const [showCodeFormatter, setShowCodeFormatter] = useState(false);
+  const [showAutoSaveSettings, setShowAutoSaveSettings] = useState(false);
+  const [showCodeSnippets, setShowCodeSnippets] = useState(false);
+  const [showThemeCustomizer, setShowThemeCustomizer] = useState(false);
+  const [showPreviewSettings, setShowPreviewSettings] = useState(false);
+  const [showShareOptions, setShowShareOptions] = useState(false);
+  const [showSearchReplace, setShowSearchReplace] = useState(false);
   
   const editorRef = useRef<any>(null);
   const previewRef = useRef<HTMLIFrameElement>(null);
@@ -302,6 +315,22 @@ const Index = () => {
     }
   }, []);
 
+  // New handler for inserting code from snippets
+  const handleInsertCode = (code: string) => {
+    if (editorRef.current) {
+      const selection = editorRef.current.getSelection();
+      const range = selection || editorRef.current.getModel().getFullModelRange();
+      editorRef.current.executeEdits('insert-snippet', [
+        {
+          range: range,
+          text: code,
+          forceMoveMarkers: true,
+        },
+      ]);
+      editorRef.current.focus();
+    }
+  };
+
   return (
     <div className={`min-h-screen transition-colors duration-300 ${isDarkMode ? 'bg-gray-900' : 'bg-gray-50'} flex flex-col overflow-hidden`}>
       {/* Header */}
@@ -318,6 +347,20 @@ const Index = () => {
         onExportHTML={exportHTML}
         onShowKeyboardShortcuts={() => setShowKeyboardShortcuts(true)}
       />
+
+      {/* Enhanced Toolbar */}
+      {!isFullscreen && (
+        <EnhancedToolbar
+          isDarkMode={isDarkMode}
+          onShowFormatter={() => setShowCodeFormatter(true)}
+          onShowAutoSave={() => setShowAutoSaveSettings(true)}
+          onShowSnippets={() => setShowCodeSnippets(true)}
+          onShowThemeCustomizer={() => setShowThemeCustomizer(true)}
+          onShowPreviewSettings={() => setShowPreviewSettings(true)}
+          onShowShareOptions={() => setShowShareOptions(true)}
+          onShowSearchReplace={() => setShowSearchReplace(true)}
+        />
+      )}
 
       {/* Main Content */}
       <div className={`flex-1 flex min-h-0 ${isFullscreen ? '' : 'pb-12 sm:pb-16 lg:pb-0'}`}>
@@ -391,6 +434,28 @@ const Index = () => {
         isVisible={showExportOptions}
         onClose={() => setShowExportOptions(false)}
         htmlCode={htmlCode}
+      />
+
+      {/* New Feature Modals */}
+      <CodeFormatter
+        isDarkMode={isDarkMode}
+        isVisible={showCodeFormatter}
+        onClose={() => setShowCodeFormatter(false)}
+        htmlCode={htmlCode}
+        onCodeChange={setHtmlCode}
+      />
+
+      <AutoSaveSettings
+        isDarkMode={isDarkMode}
+        isVisible={showAutoSaveSettings}
+        onClose={() => setShowAutoSaveSettings(false)}
+      />
+
+      <CodeSnippets
+        isDarkMode={isDarkMode}
+        isVisible={showCodeSnippets}
+        onClose={() => setShowCodeSnippets(false)}
+        onInsertCode={handleInsertCode}
       />
 
       {/* Footer */}
