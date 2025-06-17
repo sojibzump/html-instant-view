@@ -1,6 +1,6 @@
 
 import React from 'react';
-import { Moon, Sun, Download, Save, FolderOpen, Maximize2, Minimize2, Copy, RotateCcw, Trash2, MousePointer, Zap } from 'lucide-react';
+import { Moon, Sun, Download, Save, FolderOpen, Maximize2, Minimize2, Copy, RotateCcw, Trash2, MousePointer, Zap, Keyboard, HelpCircle } from 'lucide-react';
 import { adRevenueSystem } from '../utils/adRevenueSystem';
 
 interface HeaderProps {
@@ -14,6 +14,7 @@ interface HeaderProps {
   onSaveProject: () => void;
   onLoadProject: () => void;
   onExportHTML: () => void;
+  onShowKeyboardShortcuts?: () => void;
 }
 
 const Header: React.FC<HeaderProps> = ({
@@ -27,6 +28,7 @@ const Header: React.FC<HeaderProps> = ({
   onSaveProject,
   onLoadProject,
   onExportHTML,
+  onShowKeyboardShortcuts,
 }) => {
   const headerAdZone = adRevenueSystem.getAdZone('header-ad');
 
@@ -42,12 +44,12 @@ const Header: React.FC<HeaderProps> = ({
               </div>
               <div className="flex flex-col">
                 <h1 className={`text-sm sm:text-lg lg:text-xl font-bold transition-colors duration-300 truncate ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>
-                  <span className="hidden sm:inline">HTML Live Editor</span>
-                  <span className="sm:hidden">HTML Editor</span>
+                  <span className="hidden sm:inline">HTML Live Editor Pro</span>
+                  <span className="sm:hidden">HTML Pro</span>
                 </h1>
                 <span className={`text-xs px-1.5 py-0.5 sm:px-2 sm:py-1 rounded transition-colors duration-300 w-fit ${isDarkMode ? 'bg-indigo-600 text-white' : 'bg-indigo-100 text-indigo-800'}`}>
-                  <span className="hidden md:inline">Professional Blogger Support</span>
-                  <span className="md:hidden hidden sm:inline">Pro + Blogger</span>
+                  <span className="hidden md:inline">All-in-One Solution</span>
+                  <span className="md:hidden hidden sm:inline">Pro Features</span>
                   <span className="sm:hidden">Pro</span>
                 </span>
               </div>
@@ -72,7 +74,8 @@ const Header: React.FC<HeaderProps> = ({
               </div>
             )}
             <div className="text-center">
-              <div>Premium Header Ad Zone 728x90</div>
+              <div>💰 Premium Header Ad Zone 728x90</div>
+              <div className="text-xs mt-1 font-semibold text-green-600">Click for Revenue!</div>
               {headerAdZone && (
                 <div className="text-xs opacity-60 mt-1">
                   CTR: {headerAdZone.metrics.ctr.toFixed(1)}% | Revenue: ${headerAdZone.metrics.revenue.toFixed(2)}
@@ -88,7 +91,7 @@ const Header: React.FC<HeaderProps> = ({
               <button
                 onClick={onCopyToClipboard}
                 className={`p-2 sm:p-3 rounded-lg transition-all duration-200 min-w-[40px] min-h-[40px] sm:min-w-[44px] sm:min-h-[44px] flex items-center justify-center ${isDarkMode ? 'hover:bg-gray-700 text-gray-300 hover:text-white' : 'hover:bg-gray-100 text-gray-600 hover:text-gray-900'}`}
-                title="Copy All Code"
+                title="Copy All Code (Ctrl+C)"
               >
                 <Copy size={16} className="sm:w-5 sm:h-5" />
               </button>
@@ -96,18 +99,28 @@ const Header: React.FC<HeaderProps> = ({
               <button
                 onClick={onExportHTML}
                 className={`p-2 sm:p-3 rounded-lg transition-all duration-200 min-w-[40px] min-h-[40px] sm:min-w-[44px] sm:min-h-[44px] flex items-center justify-center ${isDarkMode ? 'hover:bg-gray-700 text-gray-300 hover:text-white' : 'hover:bg-gray-100 text-gray-600 hover:text-gray-900'}`}
-                title="Download HTML"
+                title="Export Options (Ctrl+Shift+D)"
               >
                 <Download size={16} className="sm:w-5 sm:h-5" />
               </button>
             </div>
 
-            {/* Secondary actions - progressive disclosure */}
+            {/* Help and shortcuts */}
             <div className="hidden xs:flex items-center space-x-1">
+              {onShowKeyboardShortcuts && (
+                <button
+                  onClick={onShowKeyboardShortcuts}
+                  className={`p-2 sm:p-3 rounded-lg transition-all duration-200 min-w-[40px] min-h-[40px] sm:min-w-[44px] sm:min-h-[44px] flex items-center justify-center ${isDarkMode ? 'hover:bg-gray-700 text-gray-300 hover:text-white' : 'hover:bg-gray-100 text-gray-600 hover:text-gray-900'}`}
+                  title="Keyboard Shortcuts (Ctrl+/)"
+                >
+                  <Keyboard size={16} className="sm:w-5 sm:h-5" />
+                </button>
+              )}
+
               <button
                 onClick={onSelectAllCode}
                 className={`p-2 sm:p-3 rounded-lg transition-all duration-200 min-w-[40px] min-h-[40px] sm:min-w-[44px] sm:min-h-[44px] flex items-center justify-center ${isDarkMode ? 'hover:bg-gray-700 text-gray-300 hover:text-white' : 'hover:bg-gray-100 text-gray-600 hover:text-gray-900'}`}
-                title="Select All Code"
+                title="Select All Code (Ctrl+A)"
               >
                 <MousePointer size={16} className="sm:w-5 sm:h-5" />
               </button>
@@ -126,7 +139,7 @@ const Header: React.FC<HeaderProps> = ({
               <button
                 onClick={onSaveProject}
                 className={`p-2 sm:p-3 rounded-lg transition-all duration-200 min-w-[40px] min-h-[40px] sm:min-w-[44px] sm:min-h-[44px] flex items-center justify-center ${isDarkMode ? 'hover:bg-gray-700 text-gray-300 hover:text-white' : 'hover:bg-gray-100 text-gray-600 hover:text-gray-900'}`}
-                title="Save Project"
+                title="Save Project (Ctrl+S)"
               >
                 <Save size={16} className="sm:w-5 sm:h-5" />
               </button>
@@ -145,7 +158,7 @@ const Header: React.FC<HeaderProps> = ({
               <button
                 onClick={onToggleFullscreen}
                 className={`p-2 sm:p-3 rounded-lg transition-all duration-200 min-w-[40px] min-h-[40px] sm:min-w-[44px] sm:min-h-[44px] flex items-center justify-center ${isDarkMode ? 'hover:bg-gray-700 text-gray-300 hover:text-white' : 'hover:bg-gray-100 text-gray-600 hover:text-gray-900'}`}
-                title={isFullscreen ? "Exit Full Preview" : "Full Preview Mode"}
+                title={isFullscreen ? "Exit Full Preview" : "Full Preview Mode (F11)"}
               >
                 {isFullscreen ? <Minimize2 size={16} className="sm:w-5 sm:h-5" /> : <Maximize2 size={16} className="sm:w-5 sm:h-5" />}
               </button>

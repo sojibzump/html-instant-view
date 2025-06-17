@@ -7,6 +7,9 @@ import Footer from '../components/Footer';
 import MobileAd from '../components/MobileAd';
 import TemplateSelector from '../components/TemplateSelector';
 import ErrorPanel from '../components/ErrorPanel';
+import FullscreenAd from '../components/FullscreenAd';
+import KeyboardShortcuts from '../components/KeyboardShortcuts';
+import ExportOptions from '../components/ExportOptions';
 import { BloggerTemplate } from '../data/bloggerTemplates';
 import { ValidationResult } from '../utils/xmlValidator';
 import { adRevenueSystem } from '../utils/adRevenueSystem';
@@ -93,6 +96,11 @@ const Index = () => {
   const [showErrors, setShowErrors] = useState(false);
   const [validationResult, setValidationResult] = useState<ValidationResult>({ isValid: true, errors: [] });
   
+  // New modern features state
+  const [showFullscreenAd, setShowFullscreenAd] = useState(false);
+  const [showKeyboardShortcuts, setShowKeyboardShortcuts] = useState(false);
+  const [showExportOptions, setShowExportOptions] = useState(false);
+  
   const editorRef = useRef<any>(null);
   const previewRef = useRef<HTMLIFrameElement>(null);
 
@@ -115,7 +123,47 @@ const Index = () => {
         adRevenueSystem.trackImpression('header-ad');
       }
     }, 1000);
-  }, [isFullscreen]);
+
+    // Add keyboard shortcuts
+    const handleKeyboard = (e: KeyboardEvent) => {
+      if (e.ctrlKey || e.metaKey) {
+        switch (e.key) {
+          case 's':
+            e.preventDefault();
+            saveProject();
+            break;
+          case 'a':
+            if (!e.shiftKey) {
+              e.preventDefault();
+              selectAllCode();
+            }
+            break;
+          case '/':
+            e.preventDefault();
+            setShowKeyboardShortcuts(true);
+            break;
+          case 'Enter':
+            e.preventDefault();
+            localStorage.setItem('htmlEditorQuickSave', htmlCode);
+            console.log('⚡ Quick saved!');
+            break;
+        }
+      }
+      
+      if (e.altKey && e.key === 't') {
+        e.preventDefault();
+        setShowTemplates(true);
+      }
+      
+      if (e.key === 'F11') {
+        e.preventDefault();
+        toggleFullscreen();
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyboard);
+    return () => window.removeEventListener('keydown', handleKeyboard);
+  }, [isFullscreen, htmlCode]);
 
   useEffect(() => {
     // Auto-save current code
@@ -166,7 +214,17 @@ const Index = () => {
   };
 
   const toggleFullscreen = () => {
-    setIsFullscreen(!isFullscreen);
+    if (!isFullscreen) {
+      // Show ad before entering fullscreen
+      setShowFullscreenAd(true);
+    } else {
+      setIsFullscreen(false);
+    }
+  };
+
+  const proceedToFullscreen = () => {
+    setShowFullscreenAd(false);
+    setIsFullscreen(true);
   };
 
   const selectAllCode = () => {
@@ -222,13 +280,7 @@ const Index = () => {
   };
 
   const exportHTML = () => {
-    const blob = new Blob([htmlCode], { type: 'text/html' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = 'index.html';
-    a.click();
-    URL.revokeObjectURL(url);
+    setShowExportOptions(true);
   };
 
   const handleTemplateSelect = (template: BloggerTemplate) => {
@@ -259,6 +311,7 @@ const Index = () => {
         onSaveProject={saveProject}
         onLoadProject={loadProject}
         onExportHTML={exportHTML}
+        onShowKeyboardShortcuts={() => setShowKeyboardShortcuts(true)}
       />
 
       {/* Main Content */}
@@ -311,6 +364,26 @@ const Index = () => {
         onTemplateSelect={handleTemplateSelect}
         isVisible={showTemplates}
         onClose={() => setShowTemplates(false)}
+      />
+
+      {/* Modern Feature Modals */}
+      <FullscreenAd
+        isDarkMode={isDarkMode}
+        onClose={() => setShowFullscreenAd(false)}
+        onProceed={proceedToFullscreen}
+      />
+      
+      <KeyboardShortcuts
+        isDarkMode={isDarkMode}
+        isVisible={showKeyboardShortcuts}
+        onClose={() => setShowKeyboardShortcuts(false)}
+      />
+      
+      <ExportOptions
+        isDarkMode={isDarkMode}
+        isVisible={showExportOptions}
+        onClose={() => setShowExportOptions(false)}
+        htmlCode={htmlCode}
       />
 
       {/* Footer */}
