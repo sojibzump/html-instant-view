@@ -1,4 +1,3 @@
-
 import React, { useEffect, useState } from 'react';
 import { X, Zap, TrendingUp } from 'lucide-react';
 import { adRevenueSystem } from '../utils/adRevenueSystem';
@@ -30,38 +29,62 @@ const FullscreenAd: React.FC<FullscreenAdProps> = ({ isDarkMode, onClose, onProc
     return () => clearInterval(timer);
   }, []);
 
-  const handleSkip = () => {
+  const handleClose = (e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    adRevenueSystem.trackClick('fullscreen-ad');
+    onClose();
+  };
+
+  const handleSkip = (e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
     adRevenueSystem.trackClick('fullscreen-ad');
     onProceed();
   };
 
-  const handleAdClick = () => {
+  const handleAdClick = (e: React.MouseEvent) => {
+    e.stopPropagation();
     adRevenueSystem.trackClick('fullscreen-ad');
-    // Simulate ad click revenue
     console.log('💰 Premium ad clicked - High revenue generated!');
   };
 
+  const handleOverlayClick = (e: React.MouseEvent) => {
+    if (e.target === e.currentTarget && canSkip) {
+      handleClose(e);
+    }
+  };
+
   return (
-    <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black bg-opacity-90">
+    <div 
+      className="fixed inset-0 z-[9999] flex items-center justify-center bg-black bg-opacity-90"
+      onClick={handleOverlayClick}
+    >
       <div className={`relative max-w-4xl w-full mx-4 rounded-2xl overflow-hidden ${
         isDarkMode ? 'bg-gray-900 border border-gray-700' : 'bg-white border border-gray-200'
       }`}>
-        {/* Close button - only if can skip */}
-        {canSkip && (
-          <button
-            onClick={onClose}
-            className="absolute top-4 right-4 z-10 p-2 rounded-full bg-black bg-opacity-50 text-white hover:bg-opacity-70 transition-all"
-          >
-            <X size={20} />
-          </button>
-        )}
+        {/* Close button - always visible but only functional when can skip */}
+        <button
+          onClick={handleClose}
+          disabled={!canSkip}
+          className={`absolute top-4 right-4 z-10 p-2 rounded-full transition-all ${
+            canSkip 
+              ? 'bg-black bg-opacity-50 text-white hover:bg-opacity-70 cursor-pointer' 
+              : 'bg-gray-500 bg-opacity-30 text-gray-400 cursor-not-allowed'
+          }`}
+          title={canSkip ? 'Close ad' : `Wait ${countdown}s to close`}
+        >
+          <X size={20} />
+        </button>
 
         {/* Premium Ad Content */}
         <div 
           className="relative h-96 flex items-center justify-center cursor-pointer group"
           onClick={handleAdClick}
         >
+          {/* Gradient background */}
           <div className="absolute inset-0 bg-gradient-to-br from-purple-600 via-blue-600 to-indigo-800"></div>
+          {/* Black overlay */}
           <div className="absolute inset-0 bg-black bg-opacity-20"></div>
           
           {/* Premium Ad Content */}
@@ -110,7 +133,7 @@ const FullscreenAd: React.FC<FullscreenAdProps> = ({ isDarkMode, onClose, onProc
             <div className="flex space-x-3">
               {canSkip && (
                 <button
-                  onClick={onClose}
+                  onClick={handleClose}
                   className={`px-4 py-2 rounded-lg transition-all ${
                     isDarkMode 
                       ? 'bg-gray-700 text-gray-300 hover:bg-gray-600' 

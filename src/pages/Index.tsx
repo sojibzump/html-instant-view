@@ -227,6 +227,11 @@ const Index = () => {
     setIsFullscreen(true);
   };
 
+  const closeFullscreenAd = () => {
+    setShowFullscreenAd(false);
+    // Don't enter fullscreen if user closes the ad
+  };
+
   const selectAllCode = () => {
     if (editorRef.current) {
       editorRef.current.setSelection(editorRef.current.getModel().getFullModelRange());
@@ -367,11 +372,13 @@ const Index = () => {
       />
 
       {/* Modern Feature Modals */}
-      <FullscreenAd
-        isDarkMode={isDarkMode}
-        onClose={() => setShowFullscreenAd(false)}
-        onProceed={proceedToFullscreen}
-      />
+      {showFullscreenAd && (
+        <FullscreenAd
+          isDarkMode={isDarkMode}
+          onClose={closeFullscreenAd}
+          onProceed={proceedToFullscreen}
+        />
+      )}
       
       <KeyboardShortcuts
         isDarkMode={isDarkMode}
