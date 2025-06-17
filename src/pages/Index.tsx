@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import Header from '../components/Header';
 import AdSidebar from '../components/AdSidebar';
@@ -108,7 +107,14 @@ const Index = () => {
     if (lastCode) {
       setHtmlCode(lastCode);
     }
-  }, []);
+
+    // Track initial ad impressions for revenue system
+    setTimeout(() => {
+      if (!isFullscreen) {
+        adRevenueSystem.trackImpression('header-ad');
+      }
+    }, 1000);
+  }, [isFullscreen]);
 
   useEffect(() => {
     // Auto-save current code
@@ -239,7 +245,7 @@ const Index = () => {
   }, []);
 
   return (
-    <div className={`min-h-screen transition-colors duration-300 ${isDarkMode ? 'bg-gray-900' : 'bg-gray-50'} flex flex-col`}>
+    <div className={`min-h-screen transition-colors duration-300 ${isDarkMode ? 'bg-gray-900' : 'bg-gray-50'} flex flex-col overflow-hidden`}>
       {/* Header */}
       <Header
         isDarkMode={isDarkMode}
@@ -264,7 +270,7 @@ const Index = () => {
           <div className="flex-1 flex flex-col lg:flex-row min-h-0">
             {/* Code Editor */}
             {!isFullscreen && (
-              <div className={`flex-1 flex flex-col min-h-0 ${isFullscreen ? '' : 'lg:w-1/2'}`}>
+              <div className={`flex-1 flex flex-col min-h-0 ${isFullscreen ? '' : 'lg:w-1/2'} border-r ${isDarkMode ? 'border-gray-700' : 'border-gray-200'}`}>
                 <CodeEditor
                   htmlCode={htmlCode}
                   isDarkMode={isDarkMode}

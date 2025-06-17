@@ -1,7 +1,9 @@
+
 import React, { useEffect, useState, useCallback, useMemo } from 'react';
 import Editor from '@monaco-editor/react';
-import { MousePointer, FileCode2, AlertTriangle, Smartphone, Tablet } from 'lucide-react';
+import { MousePointer, FileCode2, AlertTriangle, Smartphone, Tablet, Copy, Paste, Trash2, RotateCcw, Save } from 'lucide-react';
 import { validateXML, detectLanguage, ValidationResult } from '../utils/xmlValidator';
+import { ClipboardUtils } from '../utils/clipboardUtils';
 
 interface CodeEditorProps {
   htmlCode: string;
@@ -28,6 +30,8 @@ const CodeEditor: React.FC<CodeEditorProps> = ({
   const [validationResult, setValidationResult] = useState<ValidationResult>({ isValid: true, errors: [] });
   const [isMobile, setIsMobile] = useState(window.innerWidth < 768);
   const [isTablet, setIsTablet] = useState(window.innerWidth >= 768 && window.innerWidth < 1024);
+  const [canPaste, setCanPaste] = useState(false);
+  const [lastSaved, setLastSaved] = useState<Date>(new Date());
 
   const detectedLanguage = useMemo(() => detectLanguage(htmlCode), [htmlCode]);
 
@@ -42,6 +46,11 @@ const CodeEditor: React.FC<CodeEditorProps> = ({
   }, []);
 
   useEffect(() => {
+    // Check clipboard permissions
+    ClipboardUtils.hasClipboardPermission().then(setCanPaste);
+  }, []);
+
+  useEffect(() => {
     setLanguage(detectedLanguage);
     
     if (detectedLanguage === 'xml') {
@@ -53,7 +62,49 @@ const CodeEditor: React.FC<CodeEditorProps> = ({
       setValidationResult(result);
       onValidationChange(result);
     }
+
+    // Update last saved time
+    setLastSaved(new Date());
   }, [htmlCode, detectedLanguage, onValidationChange]);
+
+  const handleCopyCode = async () => {
+    const success = await ClipboardUtils.copyToClipboard(htmlCode);
+    if (success) {
+      console.log('Code copied to clipboard');
+    }
+  };
+
+  const handlePasteCode = async () => {
+    try {
+      const clipboardText = await ClipboardUtils.pasteFromClipboard();
+      if (clipboardText) {
+        onCodeChange(clipboardText);
+      }
+    } catch (err) {
+      console.error('Failed to paste from clipboard:', err);
+    }
+  };
+
+  const handleClearCode = () => {
+    if (confirm('Are you sure you want to clear all code? This action cannot be undone.')) {
+      onCodeChange('');
+      if (editorRef.current) {
+        editorRef.current.focus();
+      }
+    }
+  };
+
+  const handleUndoCode = () => {
+    if (editorRef.current) {
+      editorRef.current.trigger('keyboard', 'undo', null);
+    }
+  };
+
+  const handleQuickSave = () => {
+    localStorage.setItem('htmlEditorQuickSave', htmlCode);
+    setLastSaved(new Date());
+    console.log('Code quick saved');
+  };
 
   const errorCount = validationResult.errors.filter(e => e.type === 'error').length;
   const warningCount = validationResult.errors.filter(e => e.type === 'warning').length;
@@ -82,11 +133,14 @@ const CodeEditor: React.FC<CodeEditorProps> = ({
                 {getDeviceIcon()}
               </div>
             </div>
+            <div className="text-xs opacity-60 hidden lg:flex items-center space-x-2">
+              <div className="w-2 h-2 bg-green-400 rounded-full"></div>
+              <span>Saved {lastSaved.toLocaleTimeString()}</span>
+            </div>
           </div>
 
-          {/* Status Row - Validation Results Only */}
+          {/* Status Row - Validation Results */}
           <div className="flex flex-wrap items-center gap-2">
-            {/* Validation Results */}
             {language === 'xml' && (
               <>
                 {errorCount > 0 && (
@@ -102,14 +156,14 @@ const CodeEditor: React.FC<CodeEditorProps> = ({
                 )}
                 {validationResult.isValid && (
                   <span className="text-xs px-2 py-1 bg-green-500 bg-opacity-10 text-green-600 rounded-full border border-green-500 border-opacity-20">
-                    ✓ Valid XML
+                    ✓ Valid Blogger XML
                   </span>
                 )}
               </>
             )}
           </div>
 
-          {/* Action Buttons Row - Responsive layout */}
+          {/* Enhanced Action Buttons Row */}
           <div className="flex items-center justify-between flex-wrap gap-2">
             <div className="flex items-center space-x-1 sm:space-x-2">
               <button
@@ -120,26 +174,75 @@ const CodeEditor: React.FC<CodeEditorProps> = ({
                     : 'hover:bg-gray-100 text-gray-600 border-gray-300 hover:border-gray-400'
                 }`}
               >
-                <FileCode2 size={16} />
-                <span className="hidden sm:inline">Templates</span>
-              </button>
-              <button
-                onClick={onSelectAllCode}
-                className={`text-xs px-2 sm:px-3 py-1.5 rounded-full transition-all duration-200 border ${
-                  isDarkMode 
-                    ? 'hover:bg-gray-700 text-gray-400 border-gray-600 hover:border-gray-500' 
-                    : 'hover:bg-gray-100 text-gray-600 border-gray-300 hover:border-gray-400'
-                }`}
-              >
-                <MousePointer size={16} className="sm:hidden" />
-                <span className="hidden sm:inline">Select All</span>
+                <FileCode2 size={14} />
+                <span className="hidden sm:inline">Blogger Templates</span>
+                <span className="sm:hidden">Templates</span>
               </button>
             </div>
             
-            {/* Auto-save indicator */}
-            <div className="text-xs opacity-60 hidden lg:flex items-center space-x-1">
-              <div className="w-2 h-2 bg-green-400 rounded-full"></div>
-              <span>Auto-save</span>
+            {/* Quick Action Buttons */}
+            <div className="flex items-center space-x-1">
+              <button
+                onClick={handleCopyCode}
+                className={`p-2 rounded-lg transition-all duration-200 ${
+                  isDarkMode 
+                    ? 'hover:bg-gray-700 text-gray-400' 
+                    : 'hover:bg-gray-100 text-gray-600'
+                }`}
+                title="Copy All Code"
+              >
+                <Copy size={16} />
+              </button>
+              
+              {canPaste && (
+                <button
+                  onClick={handlePasteCode}
+                  className={`p-2 rounded-lg transition-all duration-200 ${
+                    isDarkMode 
+                      ? 'hover:bg-gray-700 text-gray-400' 
+                      : 'hover:bg-gray-100 text-gray-600'
+                  }`}
+                  title="Paste Code"
+                >
+                  <Paste size={16} />
+                </button>
+              )}
+              
+              <button
+                onClick={handleUndoCode}
+                className={`p-2 rounded-lg transition-all duration-200 ${
+                  isDarkMode 
+                    ? 'hover:bg-gray-700 text-gray-400' 
+                    : 'hover:bg-gray-100 text-gray-600'
+                }`}
+                title="Undo"
+              >
+                <RotateCcw size={16} />
+              </button>
+              
+              <button
+                onClick={handleQuickSave}
+                className={`p-2 rounded-lg transition-all duration-200 ${
+                  isDarkMode 
+                    ? 'hover:bg-gray-700 text-gray-400' 
+                    : 'hover:bg-gray-100 text-gray-600'
+                }`}
+                title="Quick Save"
+              >
+                <Save size={16} />
+              </button>
+              
+              <button
+                onClick={handleClearCode}
+                className={`p-2 rounded-lg transition-all duration-200 text-red-500 ${
+                  isDarkMode 
+                    ? 'hover:bg-red-900/20' 
+                    : 'hover:bg-red-50'
+                }`}
+                title="Clear All Code"
+              >
+                <Trash2 size={16} />
+              </button>
             </div>
           </div>
         </div>
@@ -155,7 +258,7 @@ const CodeEditor: React.FC<CodeEditorProps> = ({
           theme={isDarkMode ? 'custom-dark' : 'custom-light'}
           options={{
             minimap: { enabled: !isMobile },
-            fontSize: isMobile ? 12 : 14,
+            fontSize: isMobile ? 14 : 16,
             lineNumbers: 'on',
             wordWrap: 'on',
             automaticLayout: true,
@@ -176,6 +279,12 @@ const CodeEditor: React.FC<CodeEditorProps> = ({
             cursorSmoothCaretAnimation: 'on',
             smoothScrolling: true,
             mouseWheelScrollSensitivity: 0.5,
+            contextmenu: true,
+            selectOnLineNumbers: true,
+            roundedSelection: false,
+            readOnly: false,
+            cursorStyle: 'line',
+            accessibilitySupport: 'auto',
           }}
         />
       </div>
