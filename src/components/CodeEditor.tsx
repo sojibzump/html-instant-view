@@ -1,7 +1,6 @@
-
 import React, { useEffect, useState, useCallback, useMemo } from 'react';
 import Editor from '@monaco-editor/react';
-import { MousePointer, FileCode2, AlertTriangle, Smartphone, Tablet, Copy, Paste, Trash2, RotateCcw, Save } from 'lucide-react';
+import { MousePointer, FileCode2, AlertTriangle, Smartphone, Tablet, Copy, Clipboard, Trash2, RotateCcw, Save } from 'lucide-react';
 import { validateXML, detectLanguage, ValidationResult } from '../utils/xmlValidator';
 import { ClipboardUtils } from '../utils/clipboardUtils';
 
@@ -204,7 +203,7 @@ const CodeEditor: React.FC<CodeEditorProps> = ({
                   }`}
                   title="Paste Code"
                 >
-                  <Paste size={16} />
+                  <Clipboard size={16} />
                 </button>
               )}
               

@@ -9,6 +9,7 @@ import TemplateSelector from '../components/TemplateSelector';
 import ErrorPanel from '../components/ErrorPanel';
 import { BloggerTemplate } from '../data/bloggerTemplates';
 import { ValidationResult } from '../utils/xmlValidator';
+import { adRevenueSystem } from '../utils/adRevenueSystem';
 
 const Index = () => {
   const [htmlCode, setHtmlCode] = useState(`<!DOCTYPE html>
