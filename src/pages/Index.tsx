@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import Header from '../components/Header';
 import AdSidebar from '../components/AdSidebar';
@@ -95,7 +94,7 @@ const Index = () => {
 </body>
 </html>`);
   
-  const [isDarkMode, setIsDarkMode] = useState(false);
+  const [isDarkMode, setIsDarkMode] = useState(false); // Default to light mode
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [savedProjects, setSavedProjects] = useState<string[]>([]);
   const [showTemplates, setShowTemplates] = useState(false);
@@ -193,10 +192,25 @@ const Index = () => {
     }
   }, [htmlCode]);
 
+  const handleCodeChange = useCallback((newCode: string) => {
+    console.log('Code change handler called, new code length:', newCode.length);
+    setHtmlCode(newCode);
+    
+    // Update preview immediately
+    if (previewRef.current) {
+      try {
+        previewRef.current.srcdoc = newCode;
+      } catch (error) {
+        console.error('Preview update error:', error);
+      }
+    }
+  }, []);
+
   const handleEditorDidMount = (editor: any, monaco: any) => {
     editorRef.current = editor;
+    console.log('Editor mounted successfully');
     
-    // Configure editor
+    // Configure editor themes
     monaco.editor.defineTheme('custom-dark', {
       base: 'vs-dark',
       inherit: true,
@@ -266,7 +280,10 @@ const Index = () => {
   };
 
   const clearCode = () => {
-    if (confirm('Are you sure you want to clear all code? This action cannot be undone.')) {
+    console.log('Clear code function called');
+    const confirmed = window.confirm('Are you sure you want to clear all code? This action cannot be undone.');
+    if (confirmed) {
+      console.log('User confirmed code clearing');
       setHtmlCode('');
       if (editorRef.current) {
         editorRef.current.focus();
@@ -383,7 +400,7 @@ const Index = () => {
                   htmlCode={htmlCode}
                   isDarkMode={isDarkMode}
                   editorRef={editorRef}
-                  onCodeChange={setHtmlCode}
+                  onCodeChange={handleCodeChange}
                   onEditorDidMount={handleEditorDidMount}
                   onSelectAllCode={selectAllCode}
                   onShowTemplates={() => setShowTemplates(true)}
@@ -476,7 +493,7 @@ const Index = () => {
         isVisible={showAISuggestions}
         onClose={() => setShowAISuggestions(false)}
         htmlCode={htmlCode}
-        onCodeChange={setHtmlCode}
+        onCodeChange={handleCodeChange}
       />
 
       {/* Footer */}

@@ -66,15 +66,17 @@ const AISuggestionsPanel: React.FC<AISuggestionsPanelProps> = ({
     setIsLoading(true);
     setActiveTask(task);
     setAiResponse('');
-    setOriginalCode(htmlCode); // Store original for comparison
+    setOriginalCode(htmlCode);
 
     try {
+      console.log('AI Task started:', task);
       const response = await aiService.enhanceCode({
         code: htmlCode,
         task,
         language: 'HTML'
       });
       
+      console.log('AI Response received:', response.substring(0, 100) + '...');
       setAiResponse(response);
       
       // Add to history
@@ -84,7 +86,7 @@ const AISuggestionsPanel: React.FC<AISuggestionsPanelProps> = ({
         response,
         timestamp: Date.now()
       };
-      setResponseHistory(prev => [historyItem, ...prev.slice(0, 9)]); // Keep last 10
+      setResponseHistory(prev => [historyItem, ...prev.slice(0, 9)]);
       
     } catch (error) {
       console.error('AI Task Error:', error);
@@ -112,7 +114,9 @@ const AISuggestionsPanel: React.FC<AISuggestionsPanelProps> = ({
         ? `${customPrompt}\n\nCurrent code:\n${htmlCode}`
         : customPrompt;
       
+      console.log('Custom prompt started');
       const response = await aiService.generateCode(fullPrompt);
+      console.log('Custom prompt response received');
       setAiResponse(response);
       
       // Add to history
@@ -124,7 +128,7 @@ const AISuggestionsPanel: React.FC<AISuggestionsPanelProps> = ({
       };
       setResponseHistory(prev => [historyItem, ...prev.slice(0, 9)]);
       
-      setCustomPrompt(''); // Clear prompt after successful request
+      setCustomPrompt('');
     } catch (error) {
       console.error('Custom Prompt Error:', error);
       const errorMessage = error instanceof Error ? error.message : 'AI request failed';
@@ -135,35 +139,63 @@ const AISuggestionsPanel: React.FC<AISuggestionsPanelProps> = ({
     }
   };
 
-  const applyAICode = () => {
-    let codeToApply = aiResponse;
+  const extractCodeFromResponse = (response: string): string => {
+    console.log('Extracting code from response...');
     
-    // Clean AI response - remove explanations and get only code
-    const codeBlocks = aiResponse.match(/```[\s\S]*?```/g);
+    // First try to find code blocks with ```
+    const codeBlockRegex = /```(?:html|xml|[a-z]*)\n?([\s\S]*?)```/gi;
+    const codeBlocks = response.match(codeBlockRegex);
+    
     if (codeBlocks && codeBlocks.length > 0) {
-      codeToApply = codeBlocks[0].replace(/```[a-z]*\n?/g, '').replace(/```/g, '').trim();
-    } else {
-      // If no code blocks, try to extract HTML
-      const htmlMatch = aiResponse.match(/<(!DOCTYPE|html|head|body|div|span|p|h[1-6]|a|img|ul|ol|li|table|form|input|button|script|style)[^>]*>[\s\S]*?<\/[^>]+>/i);
-      if (htmlMatch) {
-        codeToApply = htmlMatch[0];
-      } else {
-        // Remove common explanation patterns
-        codeToApply = aiResponse
-          .replace(/^.*?(?=<!DOCTYPE|<html|<head|<body|<div|<span|<p|<h[1-6]|<a|<img|<ul|<ol|<li|<table|<form|<input|<button|<script|<style)/s, '')
-          .replace(/\n\n.*?explanation.*$/is, '')
-          .trim();
-      }
+      const cleanCode = codeBlocks[0]
+        .replace(/```[a-z]*\n?/gi, '')
+        .replace(/```/g, '')
+        .trim();
+      console.log('Found code block, extracted:', cleanCode.substring(0, 100) + '...');
+      return cleanCode;
     }
+    
+    // Try to find HTML structures
+    const htmlRegex = /<!DOCTYPE[^>]*>[\s\S]*?<\/html>/i;
+    const htmlMatch = response.match(htmlRegex);
+    if (htmlMatch) {
+      console.log('Found HTML structure');
+      return htmlMatch[0];
+    }
+    
+    // Try to find any HTML tags
+    const tagRegex = /<[^>]+>[\s\S]*?<\/[^>]+>/;
+    const tagMatch = response.match(tagRegex);
+    if (tagMatch) {
+      console.log('Found HTML tags');
+      return tagMatch[0];
+    }
+    
+    // If no specific code found, return the whole response cleaned
+    const cleaned = response
+      .replace(/^[^<]*(?=<)/s, '') // Remove text before first HTML tag
+      .replace(/\n\n.*explanation.*$/is, '') // Remove explanations
+      .trim();
+    
+    console.log('Using cleaned response');
+    return cleaned || response;
+  };
 
+  const applyAICode = () => {
+    if (!aiResponse) return;
+    
+    console.log('Applying AI code...');
+    const codeToApply = extractCodeFromResponse(aiResponse);
+    
     if (aiSuggestionMode === 'append') {
       onCodeChange(htmlCode + '\n\n' + codeToApply);
     } else if (aiSuggestionMode === 'merge') {
-      // Simple merge logic - combine unique elements
       onCodeChange(codeToApply);
     } else {
       onCodeChange(codeToApply);
     }
+    
+    console.log('AI code applied successfully');
   };
 
   const copyResponse = async () => {
@@ -475,38 +507,13 @@ const AISuggestionsPanel: React.FC<AISuggestionsPanelProps> = ({
               </div>
             ) : aiResponse ? (
               <div ref={responseRef} className="h-full overflow-y-auto p-4">
-                {codeComparison && originalCode ? (
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4 h-full">
-                    <div>
-                      <h5 className="font-medium mb-2">Original Code</h5>
-                      <div className={`p-4 rounded-lg h-full overflow-auto ${
-                        isDarkMode ? 'bg-gray-700' : 'bg-gray-50'
-                      }`}>
-                        <pre className="whitespace-pre-wrap text-sm leading-relaxed font-mono">
-                          {originalCode}
-                        </pre>
-                      </div>
-                    </div>
-                    <div>
-                      <h5 className="font-medium mb-2">AI Enhanced Code</h5>
-                      <div className={`p-4 rounded-lg h-full overflow-auto ${
-                        isDarkMode ? 'bg-gray-700' : 'bg-gray-50'
-                      }`}>
-                        <pre className="whitespace-pre-wrap text-sm leading-relaxed font-mono">
-                          {aiResponse}
-                        </pre>
-                      </div>
-                    </div>
-                  </div>
-                ) : (
-                  <div className={`p-4 rounded-lg ${
-                    isDarkMode ? 'bg-gray-700' : 'bg-gray-50'
-                  }`}>
-                    <pre className="whitespace-pre-wrap text-sm leading-relaxed font-mono">
-                      {aiResponse}
-                    </pre>
-                  </div>
-                )}
+                <div className={`p-4 rounded-lg ${
+                  isDarkMode ? 'bg-gray-700' : 'bg-gray-50'
+                }`}>
+                  <pre className="whitespace-pre-wrap text-sm leading-relaxed font-mono overflow-x-auto">
+                    {aiResponse}
+                  </pre>
+                </div>
               </div>
             ) : (
               <div className="flex items-center justify-center h-full">

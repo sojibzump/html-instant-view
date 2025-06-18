@@ -1,4 +1,3 @@
-
 import React, { useEffect, useState, useCallback, useMemo } from 'react';
 import Editor from '@monaco-editor/react';
 import { MousePointer, FileCode2, AlertTriangle, Smartphone, Tablet, Copy, Clipboard, Trash2, RotateCcw, Save, Download, Upload } from 'lucide-react';
@@ -99,11 +98,19 @@ const CodeEditor: React.FC<CodeEditorProps> = ({
   };
 
   const handleClearCode = () => {
-    if (confirm('আপনি কি নিশ্চিত যে সব কোড ডিলিট করতে চান? এই কাজটি আর ফিরিয়ে আনা যাবে না।')) {
+    const confirmed = window.confirm('আপনি কি নিশ্চিত যে সব কোড ডিলিট করতে চান? এই কাজটি আর ফিরিয়ে আনা যাবে না।');
+    if (confirmed) {
+      console.log('Clearing code - before:', htmlCode.length);
       onCodeChange('');
-      if (editorRef.current) {
-        editorRef.current.focus();
-      }
+      console.log('Code cleared successfully');
+      
+      // Focus editor after clearing
+      setTimeout(() => {
+        if (editorRef.current) {
+          editorRef.current.focus();
+        }
+      }, 100);
+      
       showMessage('সব কোড ডিলিট হয়েছে!');
     }
   };
@@ -339,7 +346,10 @@ const CodeEditor: React.FC<CodeEditorProps> = ({
           height="100%"
           language={language}
           value={htmlCode}
-          onChange={(value) => onCodeChange(value || '')}
+          onChange={(value) => {
+            console.log('Editor onChange triggered, new value length:', value?.length || 0);
+            onCodeChange(value || '');
+          }}
           onMount={onEditorDidMount}
           theme={isDarkMode ? 'custom-dark' : 'custom-light'}
           options={{
