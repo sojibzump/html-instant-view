@@ -1,10 +1,10 @@
+
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import Header from '../components/Header';
 import AdSidebar from '../components/AdSidebar';
 import CodeEditor from '../components/CodeEditor';
 import LivePreview from '../components/LivePreview';
 import Footer from '../components/Footer';
-import MobileAd from '../components/MobileAd';
 import TemplateSelector from '../components/TemplateSelector';
 import ErrorPanel from '../components/ErrorPanel';
 import FullscreenAd from '../components/FullscreenAd';
@@ -95,7 +95,7 @@ const Index = () => {
 </body>
 </html>`);
   
-  const [isDarkMode, setIsDarkMode] = useState(false); // Changed to false for light default
+  const [isDarkMode, setIsDarkMode] = useState(false);
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [savedProjects, setSavedProjects] = useState<string[]>([]);
   const [showTemplates, setShowTemplates] = useState(false);
@@ -369,7 +369,7 @@ const Index = () => {
       )}
 
       {/* Main Content */}
-      <div className={`flex-1 flex min-h-0 ${isFullscreen ? '' : 'pb-12 sm:pb-16 lg:pb-0'}`}>
+      <div className={`flex-1 flex min-h-0`}>
         {/* Sidebar Ad Zone */}
         {!isFullscreen && <AdSidebar isDarkMode={isDarkMode} />}
 
@@ -481,9 +481,6 @@ const Index = () => {
 
       {/* Footer */}
       {!isFullscreen && <Footer isDarkMode={isDarkMode} />}
-
-      {/* Mobile Ad Zone */}
-      {!isFullscreen && <MobileAd isDarkMode={isDarkMode} />}
     </div>
   );
 };

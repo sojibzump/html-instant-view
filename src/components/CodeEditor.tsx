@@ -1,6 +1,7 @@
+
 import React, { useEffect, useState, useCallback, useMemo } from 'react';
 import Editor from '@monaco-editor/react';
-import { MousePointer, FileCode2, AlertTriangle, Smartphone, Tablet, Copy, Clipboard, Trash2, RotateCcw, Save } from 'lucide-react';
+import { MousePointer, FileCode2, AlertTriangle, Smartphone, Tablet, Copy, Clipboard, Trash2, RotateCcw, Save, Download, Upload } from 'lucide-react';
 import { validateXML, detectLanguage, ValidationResult } from '../utils/xmlValidator';
 import { ClipboardUtils } from '../utils/clipboardUtils';
 
@@ -31,6 +32,7 @@ const CodeEditor: React.FC<CodeEditorProps> = ({
   const [isTablet, setIsTablet] = useState(window.innerWidth >= 768 && window.innerWidth < 1024);
   const [canPaste, setCanPaste] = useState(false);
   const [lastSaved, setLastSaved] = useState<Date>(new Date());
+  const [showToast, setShowToast] = useState<{message: string, type: 'success' | 'error'} | null>(null);
 
   const detectedLanguage = useMemo(() => detectLanguage(htmlCode), [htmlCode]);
 
@@ -45,7 +47,6 @@ const CodeEditor: React.FC<CodeEditorProps> = ({
   }, []);
 
   useEffect(() => {
-    // Check clipboard permissions
     ClipboardUtils.hasClipboardPermission().then(setCanPaste);
   }, []);
 
@@ -62,14 +63,26 @@ const CodeEditor: React.FC<CodeEditorProps> = ({
       onValidationChange(result);
     }
 
-    // Update last saved time
     setLastSaved(new Date());
   }, [htmlCode, detectedLanguage, onValidationChange]);
+
+  useEffect(() => {
+    if (showToast) {
+      const timer = setTimeout(() => setShowToast(null), 3000);
+      return () => clearTimeout(timer);
+    }
+  }, [showToast]);
+
+  const showMessage = (message: string, type: 'success' | 'error' = 'success') => {
+    setShowToast({ message, type });
+  };
 
   const handleCopyCode = async () => {
     const success = await ClipboardUtils.copyToClipboard(htmlCode);
     if (success) {
-      console.log('Code copied to clipboard');
+      showMessage('কোড কপি হয়েছে!');
+    } else {
+      showMessage('কপি করতে সমস্যা হয়েছে', 'error');
     }
   };
 
@@ -78,31 +91,67 @@ const CodeEditor: React.FC<CodeEditorProps> = ({
       const clipboardText = await ClipboardUtils.pasteFromClipboard();
       if (clipboardText) {
         onCodeChange(clipboardText);
+        showMessage('কোড পেস্ট হয়েছে!');
       }
     } catch (err) {
-      console.error('Failed to paste from clipboard:', err);
+      showMessage('পেস্ট করতে সমস্যা হয়েছে', 'error');
     }
   };
 
   const handleClearCode = () => {
-    if (confirm('Are you sure you want to clear all code? This action cannot be undone.')) {
+    if (confirm('আপনি কি নিশ্চিত যে সব কোড ডিলিট করতে চান? এই কাজটি আর ফিরিয়ে আনা যাবে না।')) {
       onCodeChange('');
       if (editorRef.current) {
         editorRef.current.focus();
       }
+      showMessage('সব কোড ডিলিট হয়েছে!');
     }
   };
 
   const handleUndoCode = () => {
     if (editorRef.current) {
       editorRef.current.trigger('keyboard', 'undo', null);
+      showMessage('আন্ডো করা হয়েছে!');
     }
   };
 
   const handleQuickSave = () => {
     localStorage.setItem('htmlEditorQuickSave', htmlCode);
+    localStorage.setItem('htmlEditorLastSave', new Date().toISOString());
     setLastSaved(new Date());
-    console.log('Code quick saved');
+    showMessage('কোড সেভ হয়েছে!');
+  };
+
+  const handleExportCode = () => {
+    const blob = new Blob([htmlCode], { type: 'text/html' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `code-${new Date().toISOString().slice(0, 19).replace(/:/g, '-')}.html`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+    showMessage('ফাইল ডাউনলোড হয়েছে!');
+  };
+
+  const handleImportCode = () => {
+    const input = document.createElement('input');
+    input.type = 'file';
+    input.accept = '.html,.htm,.xml,.txt';
+    input.onchange = (e) => {
+      const file = (e.target as HTMLInputElement).files?.[0];
+      if (file) {
+        const reader = new FileReader();
+        reader.onload = (e) => {
+          const content = e.target?.result as string;
+          onCodeChange(content);
+          showMessage('ফাইল আপলোড হয়েছে!');
+        };
+        reader.readAsText(file);
+      }
+    };
+    input.click();
   };
 
   const errorCount = validationResult.errors.filter(e => e.type === 'error').length;
@@ -116,6 +165,17 @@ const CodeEditor: React.FC<CodeEditorProps> = ({
 
   return (
     <div className="flex-1 flex flex-col min-h-0">
+      {/* Toast Notification */}
+      {showToast && (
+        <div className={`fixed top-4 right-4 z-50 px-4 py-2 rounded-lg shadow-lg transition-all duration-300 ${
+          showToast.type === 'success' 
+            ? 'bg-green-500 text-white' 
+            : 'bg-red-500 text-white'
+        }`}>
+          {showToast.message}
+        </div>
+      )}
+
       <div className={`px-2 sm:px-4 py-2 sm:py-3 border-b transition-colors duration-300 ${
         isDarkMode 
           ? 'bg-gray-900 border-gray-700 text-gray-300' 
@@ -133,8 +193,8 @@ const CodeEditor: React.FC<CodeEditorProps> = ({
               </div>
             </div>
             <div className="text-xs opacity-60 hidden lg:flex items-center space-x-2">
-              <div className="w-2 h-2 bg-green-400 rounded-full"></div>
-              <span>Saved {lastSaved.toLocaleTimeString()}</span>
+              <div className="w-2 h-2 bg-green-400 rounded-full animate-pulse"></div>
+              <span>সেভ হয়েছে {lastSaved.toLocaleTimeString()}</span>
             </div>
           </div>
 
@@ -145,21 +205,24 @@ const CodeEditor: React.FC<CodeEditorProps> = ({
                 {errorCount > 0 && (
                   <span className="text-xs px-2 py-1 bg-red-500 bg-opacity-10 text-red-600 rounded-full border border-red-500 border-opacity-20 flex items-center space-x-1">
                     <AlertTriangle size={12} />
-                    <span>{errorCount} error{errorCount !== 1 ? 's' : ''}</span>
+                    <span>{errorCount} ত্রুটি</span>
                   </span>
                 )}
                 {warningCount > 0 && (
                   <span className="text-xs px-2 py-1 bg-yellow-500 bg-opacity-10 text-yellow-600 rounded-full border border-yellow-500 border-opacity-20">
-                    {warningCount} warning{warningCount !== 1 ? 's' : ''}
+                    {warningCount} সতর্কতা
                   </span>
                 )}
                 {validationResult.isValid && (
                   <span className="text-xs px-2 py-1 bg-green-500 bg-opacity-10 text-green-600 rounded-full border border-green-500 border-opacity-20">
-                    ✓ Valid Blogger XML
+                    ✓ সঠিক Blogger XML
                   </span>
                 )}
               </>
             )}
+            <span className="text-xs px-2 py-1 bg-blue-500 bg-opacity-10 text-blue-600 rounded-full border border-blue-500 border-opacity-20">
+              {htmlCode.length} অক্ষর
+            </span>
           </div>
 
           {/* Enhanced Action Buttons Row */}
@@ -183,12 +246,12 @@ const CodeEditor: React.FC<CodeEditorProps> = ({
             <div className="flex items-center space-x-1">
               <button
                 onClick={handleCopyCode}
-                className={`p-2 rounded-lg transition-all duration-200 ${
+                className={`p-2 rounded-lg transition-all duration-200 hover:scale-105 ${
                   isDarkMode 
-                    ? 'hover:bg-gray-700 text-gray-400' 
-                    : 'hover:bg-gray-100 text-gray-600'
+                    ? 'hover:bg-gray-700 text-gray-400 hover:text-white' 
+                    : 'hover:bg-gray-100 text-gray-600 hover:text-gray-800'
                 }`}
-                title="Copy All Code"
+                title="সব কোড কপি করুন"
               >
                 <Copy size={16} />
               </button>
@@ -196,12 +259,12 @@ const CodeEditor: React.FC<CodeEditorProps> = ({
               {canPaste && (
                 <button
                   onClick={handlePasteCode}
-                  className={`p-2 rounded-lg transition-all duration-200 ${
+                  className={`p-2 rounded-lg transition-all duration-200 hover:scale-105 ${
                     isDarkMode 
-                      ? 'hover:bg-gray-700 text-gray-400' 
-                      : 'hover:bg-gray-100 text-gray-600'
+                      ? 'hover:bg-gray-700 text-gray-400 hover:text-white' 
+                      : 'hover:bg-gray-100 text-gray-600 hover:text-gray-800'
                   }`}
-                  title="Paste Code"
+                  title="কোড পেস্ট করুন"
                 >
                   <Clipboard size={16} />
                 </button>
@@ -209,36 +272,60 @@ const CodeEditor: React.FC<CodeEditorProps> = ({
               
               <button
                 onClick={handleUndoCode}
-                className={`p-2 rounded-lg transition-all duration-200 ${
+                className={`p-2 rounded-lg transition-all duration-200 hover:scale-105 ${
                   isDarkMode 
-                    ? 'hover:bg-gray-700 text-gray-400' 
-                    : 'hover:bg-gray-100 text-gray-600'
+                    ? 'hover:bg-gray-700 text-gray-400 hover:text-white' 
+                    : 'hover:bg-gray-100 text-gray-600 hover:text-gray-800'
                 }`}
-                title="Undo"
+                title="আন্ডো করুন"
               >
                 <RotateCcw size={16} />
               </button>
               
               <button
                 onClick={handleQuickSave}
-                className={`p-2 rounded-lg transition-all duration-200 ${
+                className={`p-2 rounded-lg transition-all duration-200 hover:scale-105 ${
                   isDarkMode 
-                    ? 'hover:bg-gray-700 text-gray-400' 
-                    : 'hover:bg-gray-100 text-gray-600'
+                    ? 'hover:bg-gray-700 text-gray-400 hover:text-white' 
+                    : 'hover:bg-gray-100 text-gray-600 hover:text-gray-800'
                 }`}
-                title="Quick Save"
+                title="দ্রুত সেভ"
               >
                 <Save size={16} />
+              </button>
+
+              <button
+                onClick={handleExportCode}
+                className={`p-2 rounded-lg transition-all duration-200 hover:scale-105 ${
+                  isDarkMode 
+                    ? 'hover:bg-gray-700 text-gray-400 hover:text-white' 
+                    : 'hover:bg-gray-100 text-gray-600 hover:text-gray-800'
+                }`}
+                title="ফাইল ডাউনলোড করুন"
+              >
+                <Download size={16} />
+              </button>
+
+              <button
+                onClick={handleImportCode}
+                className={`p-2 rounded-lg transition-all duration-200 hover:scale-105 ${
+                  isDarkMode 
+                    ? 'hover:bg-gray-700 text-gray-400 hover:text-white' 
+                    : 'hover:bg-gray-100 text-gray-600 hover:text-gray-800'
+                }`}
+                title="ফাইল আপলোড করুন"
+              >
+                <Upload size={16} />
               </button>
               
               <button
                 onClick={handleClearCode}
-                className={`p-2 rounded-lg transition-all duration-200 text-red-500 ${
+                className={`p-2 rounded-lg transition-all duration-200 hover:scale-105 text-red-500 ${
                   isDarkMode 
-                    ? 'hover:bg-red-900/20' 
-                    : 'hover:bg-red-50'
+                    ? 'hover:bg-red-900/20 hover:text-red-400' 
+                    : 'hover:bg-red-50 hover:text-red-600'
                 }`}
-                title="Clear All Code"
+                title="সব কোড ডিলিট করুন"
               >
                 <Trash2 size={16} />
               </button>
