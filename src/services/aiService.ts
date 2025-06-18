@@ -148,22 +148,24 @@ export class AIService {
     }
 
     const prompts = {
-      optimize: `Optimize this ${request.language || 'HTML'} code for better performance, accessibility, and SEO. Focus on:\n- Code structure and organization\n- Performance improvements\n- Accessibility best practices\n- SEO optimization\n- Modern web standards\n\nCode:\n${request.code}`,
+      optimize: `Optimize this ${request.language || 'HTML'} code for better performance, accessibility, and SEO. Return ONLY the optimized code without any explanations or comments.\n\nCode:\n${request.code}`,
       
       explain: `Explain this ${request.language || 'HTML'} code in a clear, beginner-friendly way. Include:\n- What the code does\n- Key features and functionality\n- How different parts work together\n- Any notable techniques used\n\nCode:\n${request.code}`,
       
-      debug: `Analyze this ${request.language || 'HTML'} code and identify potential issues:\n- Syntax errors\n- Logic problems\n- Performance issues\n- Accessibility concerns\n- Best practice violations\n\nProvide fixes for any issues found.\n\nCode:\n${request.code}`,
+      debug: `Analyze this ${request.language || 'HTML'} code and return the fixed version. Return ONLY the corrected code without explanations.\n\nCode:\n${request.code}`,
       
-      enhance: `Enhance this ${request.language || 'HTML'} code with modern features and best practices:\n- Add responsive design\n- Improve user experience\n- Add interactive elements\n- Implement modern CSS/JS features\n- Ensure accessibility\n\nCode:\n${request.code}`,
+      enhance: `Enhance this ${request.language || 'HTML'} code with modern features. Return ONLY the enhanced code without explanations.\n\nCode:\n${request.code}`,
       
-      convert: `Convert and modernize this ${request.language || 'HTML'} code:\n- Use semantic HTML5 elements\n- Apply modern CSS techniques\n- Add responsive design\n- Improve code structure\n- Follow current web standards\n\nCode:\n${request.code}`
+      convert: `Convert and modernize this ${request.language || 'HTML'} code. Return ONLY the converted code without explanations.\n\nCode:\n${request.code}`
     };
 
     try {
       const messages = [
         {
           role: 'system',
-          content: 'You are an expert web developer assistant. Provide clean, optimized, and well-commented code. Always explain your changes and improvements clearly.'
+          content: request.task === 'explain' 
+            ? 'You are an expert web developer. Provide clear explanations of code functionality.' 
+            : 'You are an expert web developer. Return ONLY clean, optimized code without any explanations, comments, or additional text. No markdown formatting.'
         },
         {
           role: 'user',
@@ -192,7 +194,7 @@ export class AIService {
       const messages = [
         {
           role: 'system',
-          content: 'You are a skilled web developer. Generate clean, modern, and responsive HTML/CSS/JavaScript code based on user requests. Focus on:\n- Semantic HTML structure\n- Responsive design\n- Accessibility\n- Modern CSS techniques\n- Clean, readable code\n- Best practices\n\nOnly return the code with minimal explanation unless specifically asked for detailed explanations.'
+          content: 'You are a skilled web developer. Generate clean, modern, and responsive HTML/CSS/JavaScript code. Return ONLY the code without any explanations, comments, or markdown formatting.'
         },
         {
           role: 'user',

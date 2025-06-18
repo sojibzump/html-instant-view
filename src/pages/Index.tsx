@@ -95,7 +95,7 @@ const Index = () => {
 </body>
 </html>`);
   
-  const [isDarkMode, setIsDarkMode] = useState(true);
+  const [isDarkMode, setIsDarkMode] = useState(false); // Changed to false for light default
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [savedProjects, setSavedProjects] = useState<string[]>([]);
   const [showTemplates, setShowTemplates] = useState(false);

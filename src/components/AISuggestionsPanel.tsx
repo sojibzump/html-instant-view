@@ -1,4 +1,3 @@
-
 import React, { useState, useRef, useEffect } from 'react';
 import { 
   Brain, 
@@ -40,6 +39,9 @@ const AISuggestionsPanel: React.FC<AISuggestionsPanelProps> = ({
   const [responseHistory, setResponseHistory] = useState<Array<{id: string, prompt: string, response: string, timestamp: number}>>([]);
   const [showHistory, setShowHistory] = useState(false);
   const [copySuccess, setCopySuccess] = useState(false);
+  const [codeComparison, setCodeComparison] = useState(false);
+  const [originalCode, setOriginalCode] = useState('');
+  const [aiSuggestionMode, setAiSuggestionMode] = useState<'replace' | 'append' | 'merge'>('replace');
   const responseRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -64,6 +66,7 @@ const AISuggestionsPanel: React.FC<AISuggestionsPanelProps> = ({
     setIsLoading(true);
     setActiveTask(task);
     setAiResponse('');
+    setOriginalCode(htmlCode); // Store original for comparison
 
     try {
       const response = await aiService.enhanceCode({
@@ -133,24 +136,33 @@ const AISuggestionsPanel: React.FC<AISuggestionsPanelProps> = ({
   };
 
   const applyAICode = () => {
-    // Extract code from AI response (look for code blocks)
-    const codeMatches = aiResponse.match(/```(?:html|css|javascript|js)?\n?([\s\S]*?)\n?```/g);
-    if (codeMatches && codeMatches.length > 0) {
-      // Get the largest code block (likely the main code)
-      const largestBlock = codeMatches.reduce((prev, current) => 
-        current.length > prev.length ? current : prev
-      );
-      const code = largestBlock.replace(/```(?:html|css|javascript|js)?\n?|```$/g, '').trim();
-      onCodeChange(code);
+    let codeToApply = aiResponse;
+    
+    // Clean AI response - remove explanations and get only code
+    const codeBlocks = aiResponse.match(/```[\s\S]*?```/g);
+    if (codeBlocks && codeBlocks.length > 0) {
+      codeToApply = codeBlocks[0].replace(/```[a-z]*\n?/g, '').replace(/```/g, '').trim();
     } else {
-      // If no code blocks found, try to extract HTML-like content
+      // If no code blocks, try to extract HTML
       const htmlMatch = aiResponse.match(/<(!DOCTYPE|html|head|body|div|span|p|h[1-6]|a|img|ul|ol|li|table|form|input|button|script|style)[^>]*>[\s\S]*?<\/[^>]+>/i);
       if (htmlMatch) {
-        onCodeChange(htmlMatch[0]);
+        codeToApply = htmlMatch[0];
       } else {
-        // Use the whole response as fallback
-        onCodeChange(aiResponse);
+        // Remove common explanation patterns
+        codeToApply = aiResponse
+          .replace(/^.*?(?=<!DOCTYPE|<html|<head|<body|<div|<span|<p|<h[1-6]|<a|<img|<ul|<ol|<li|<table|<form|<input|<button|<script|<style)/s, '')
+          .replace(/\n\n.*?explanation.*$/is, '')
+          .trim();
       }
+    }
+
+    if (aiSuggestionMode === 'append') {
+      onCodeChange(htmlCode + '\n\n' + codeToApply);
+    } else if (aiSuggestionMode === 'merge') {
+      // Simple merge logic - combine unique elements
+      onCodeChange(codeToApply);
+    } else {
+      onCodeChange(codeToApply);
     }
   };
 
@@ -208,6 +220,14 @@ const AISuggestionsPanel: React.FC<AISuggestionsPanelProps> = ({
       description: 'Get detailed explanation',
       color: 'text-green-500',
       bgColor: 'bg-green-500'
+    },
+    {
+      id: 'convert',
+      icon: Code2,
+      label: 'Convert',
+      description: 'Modernize code',
+      color: 'text-indigo-500',
+      bgColor: 'bg-indigo-500'
     }
   ];
 
@@ -220,7 +240,7 @@ const AISuggestionsPanel: React.FC<AISuggestionsPanelProps> = ({
         <div className={`sm:hidden flex items-center justify-between p-4 border-b ${isDarkMode ? 'border-gray-700' : 'border-gray-200'}`}>
           <div className="flex items-center space-x-2">
             <Brain size={20} className="text-purple-500" />
-            <h3 className="font-semibold">AI Assistant</h3>
+            <h3 className="font-semibold">AI Assistant Pro</h3>
           </div>
           <button
             onClick={onClose}
@@ -236,7 +256,7 @@ const AISuggestionsPanel: React.FC<AISuggestionsPanelProps> = ({
           <div className={`hidden sm:flex items-center justify-between p-4 border-b ${isDarkMode ? 'border-gray-700' : 'border-gray-200'}`}>
             <div className="flex items-center space-x-2">
               <Brain size={20} className="text-purple-500" />
-              <h3 className="font-semibold">AI Assistant</h3>
+              <h3 className="font-semibold">AI Assistant Pro</h3>
             </div>
             <button
               onClick={onClose}
@@ -263,10 +283,32 @@ const AISuggestionsPanel: React.FC<AISuggestionsPanelProps> = ({
               </div>
             )}
 
+            {/* AI Mode Selector */}
+            <div>
+              <h4 className="font-medium mb-2">Apply Mode</h4>
+              <div className="grid grid-cols-3 gap-1">
+                {['replace', 'append', 'merge'].map((mode) => (
+                  <button
+                    key={mode}
+                    onClick={() => setAiSuggestionMode(mode as any)}
+                    className={`p-2 text-xs rounded-lg border transition-all ${
+                      aiSuggestionMode === mode
+                        ? 'bg-purple-500 text-white border-purple-500'
+                        : isDarkMode 
+                          ? 'border-gray-600 hover:border-gray-500' 
+                          : 'border-gray-300 hover:border-gray-400'
+                    }`}
+                  >
+                    {mode.charAt(0).toUpperCase() + mode.slice(1)}
+                  </button>
+                ))}
+              </div>
+            </div>
+
             <div>
               <h4 className="font-medium mb-3 flex items-center space-x-2">
                 <Lightbulb size={16} className="text-yellow-500" />
-                <span>Quick Actions</span>
+                <span>AI Actions</span>
               </h4>
               <div className="grid grid-cols-2 sm:grid-cols-1 gap-2">
                 {quickActions.map((action) => (
@@ -330,6 +372,24 @@ const AISuggestionsPanel: React.FC<AISuggestionsPanelProps> = ({
                 </div>
               </button>
             </div>
+
+            {/* Code Comparison Toggle */}
+            {originalCode && aiResponse && (
+              <div>
+                <button
+                  onClick={() => setCodeComparison(!codeComparison)}
+                  className={`w-full p-2 rounded-lg border text-sm font-medium transition-all ${
+                    codeComparison
+                      ? 'bg-blue-500 text-white border-blue-500'
+                      : isDarkMode 
+                        ? 'border-gray-600 hover:border-gray-500' 
+                        : 'border-gray-300 hover:border-gray-400'
+                  }`}
+                >
+                  {codeComparison ? 'Hide' : 'Show'} Code Comparison
+                </button>
+              </div>
+            )}
 
             {/* Response History */}
             {responseHistory.length > 0 && (
@@ -415,13 +475,38 @@ const AISuggestionsPanel: React.FC<AISuggestionsPanelProps> = ({
               </div>
             ) : aiResponse ? (
               <div ref={responseRef} className="h-full overflow-y-auto p-4">
-                <div className={`p-4 rounded-lg ${
-                  isDarkMode ? 'bg-gray-700' : 'bg-gray-50'
-                }`}>
-                  <pre className="whitespace-pre-wrap text-sm leading-relaxed font-mono">
-                    {aiResponse}
-                  </pre>
-                </div>
+                {codeComparison && originalCode ? (
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4 h-full">
+                    <div>
+                      <h5 className="font-medium mb-2">Original Code</h5>
+                      <div className={`p-4 rounded-lg h-full overflow-auto ${
+                        isDarkMode ? 'bg-gray-700' : 'bg-gray-50'
+                      }`}>
+                        <pre className="whitespace-pre-wrap text-sm leading-relaxed font-mono">
+                          {originalCode}
+                        </pre>
+                      </div>
+                    </div>
+                    <div>
+                      <h5 className="font-medium mb-2">AI Enhanced Code</h5>
+                      <div className={`p-4 rounded-lg h-full overflow-auto ${
+                        isDarkMode ? 'bg-gray-700' : 'bg-gray-50'
+                      }`}>
+                        <pre className="whitespace-pre-wrap text-sm leading-relaxed font-mono">
+                          {aiResponse}
+                        </pre>
+                      </div>
+                    </div>
+                  </div>
+                ) : (
+                  <div className={`p-4 rounded-lg ${
+                    isDarkMode ? 'bg-gray-700' : 'bg-gray-50'
+                  }`}>
+                    <pre className="whitespace-pre-wrap text-sm leading-relaxed font-mono">
+                      {aiResponse}
+                    </pre>
+                  </div>
+                )}
               </div>
             ) : (
               <div className="flex items-center justify-center h-full">
