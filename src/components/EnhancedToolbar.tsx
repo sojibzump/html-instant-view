@@ -10,7 +10,9 @@ import {
   Search,
   Layers,
   Zap,
-  FileText
+  FileText,
+  Brain,
+  Settings
 } from 'lucide-react';
 
 interface EnhancedToolbarProps {
@@ -22,6 +24,8 @@ interface EnhancedToolbarProps {
   onShowPreviewSettings: () => void;
   onShowShareOptions: () => void;
   onShowSearchReplace: () => void;
+  onShowAISettings: () => void;
+  onShowAISuggestions: () => void;
 }
 
 const EnhancedToolbar: React.FC<EnhancedToolbarProps> = ({
@@ -33,14 +37,32 @@ const EnhancedToolbar: React.FC<EnhancedToolbarProps> = ({
   onShowPreviewSettings,
   onShowShareOptions,
   onShowSearchReplace,
+  onShowAISettings,
+  onShowAISuggestions,
 }) => {
   const tools = [
+    {
+      icon: Brain,
+      label: 'AI Assistant',
+      description: 'AI-powered code enhancement',
+      onClick: onShowAISuggestions,
+      color: 'text-purple-500',
+      isNew: true
+    },
+    {
+      icon: Settings,
+      label: 'AI Settings',
+      description: 'Configure AI API key',
+      onClick: onShowAISettings,
+      color: 'text-indigo-500',
+      isNew: true
+    },
     {
       icon: Wand2,
       label: 'Code Formatter',
       description: 'Format & beautify code',
       onClick: onShowFormatter,
-      color: 'text-purple-500'
+      color: 'text-blue-500'
     },
     {
       icon: Clock,
@@ -102,7 +124,7 @@ const EnhancedToolbar: React.FC<EnhancedToolbarProps> = ({
           <button
             key={index}
             onClick={tool.onClick}
-            className={`flex items-center space-x-1 px-3 py-1.5 rounded-lg transition-all duration-200 whitespace-nowrap text-sm ${
+            className={`relative flex items-center space-x-1 px-3 py-1.5 rounded-lg transition-all duration-200 whitespace-nowrap text-sm ${
               isDarkMode 
                 ? 'hover:bg-gray-700 text-gray-400 hover:text-white' 
                 : 'hover:bg-gray-100 text-gray-600 hover:text-gray-900'
@@ -111,6 +133,9 @@ const EnhancedToolbar: React.FC<EnhancedToolbarProps> = ({
           >
             <tool.icon size={14} className={tool.color} />
             <span className="hidden sm:inline">{tool.label}</span>
+            {tool.isNew && (
+              <span className="absolute -top-1 -right-1 w-2 h-2 bg-red-500 rounded-full"></span>
+            )}
           </button>
         ))}
       </div>

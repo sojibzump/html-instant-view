@@ -17,6 +17,8 @@ import EnhancedToolbar from '../components/EnhancedToolbar';
 import { BloggerTemplate } from '../data/bloggerTemplates';
 import { ValidationResult } from '../utils/xmlValidator';
 import { adRevenueSystem } from '../utils/adRevenueSystem';
+import AISuggestionsPanel from '../components/AISuggestionsPanel';
+import AISettings from '../components/AISettings';
 
 const Index = () => {
   const [htmlCode, setHtmlCode] = useState(`<!DOCTYPE html>
@@ -113,6 +115,8 @@ const Index = () => {
   const [showPreviewSettings, setShowPreviewSettings] = useState(false);
   const [showShareOptions, setShowShareOptions] = useState(false);
   const [showSearchReplace, setShowSearchReplace] = useState(false);
+  const [showAISettings, setShowAISettings] = useState(false);
+  const [showAISuggestions, setShowAISuggestions] = useState(false);
   
   const editorRef = useRef<any>(null);
   const previewRef = useRef<HTMLIFrameElement>(null);
@@ -359,6 +363,8 @@ const Index = () => {
           onShowPreviewSettings={() => setShowPreviewSettings(true)}
           onShowShareOptions={() => setShowShareOptions(true)}
           onShowSearchReplace={() => setShowSearchReplace(true)}
+          onShowAISettings={() => setShowAISettings(true)}
+          onShowAISuggestions={() => setShowAISuggestions(true)}
         />
       )}
 
@@ -456,6 +462,21 @@ const Index = () => {
         isVisible={showCodeSnippets}
         onClose={() => setShowCodeSnippets(false)}
         onInsertCode={handleInsertCode}
+      />
+
+      {/* AI Feature Modals */}
+      <AISettings
+        isDarkMode={isDarkMode}
+        isVisible={showAISettings}
+        onClose={() => setShowAISettings(false)}
+      />
+
+      <AISuggestionsPanel
+        isDarkMode={isDarkMode}
+        isVisible={showAISuggestions}
+        onClose={() => setShowAISuggestions(false)}
+        htmlCode={htmlCode}
+        onCodeChange={setHtmlCode}
       />
 
       {/* Footer */}
