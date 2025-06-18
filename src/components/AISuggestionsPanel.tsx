@@ -1,6 +1,21 @@
 
-import React, { useState } from 'react';
-import { Brain, Wand2, X, MessageCircle, Code2, Bug, Sparkles, Copy, ArrowRight } from 'lucide-react';
+import React, { useState, useRef, useEffect } from 'react';
+import { 
+  Brain, 
+  Wand2, 
+  X, 
+  MessageCircle, 
+  Code2, 
+  Bug, 
+  Sparkles, 
+  Copy, 
+  ArrowRight, 
+  RefreshCw,
+  Lightbulb,
+  Download,
+  AlertCircle,
+  CheckCircle
+} from 'lucide-react';
 import { aiService } from '../services/aiService';
 
 interface AISuggestionsPanelProps {
@@ -22,12 +37,27 @@ const AISuggestionsPanel: React.FC<AISuggestionsPanelProps> = ({
   const [aiResponse, setAiResponse] = useState('');
   const [customPrompt, setCustomPrompt] = useState('');
   const [activeTask, setActiveTask] = useState<string>('');
+  const [responseHistory, setResponseHistory] = useState<Array<{id: string, prompt: string, response: string, timestamp: number}>>([]);
+  const [showHistory, setShowHistory] = useState(false);
+  const [copySuccess, setCopySuccess] = useState(false);
+  const responseRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (responseRef.current) {
+      responseRef.current.scrollTop = responseRef.current.scrollHeight;
+    }
+  }, [aiResponse]);
 
   if (!isVisible) return null;
 
   const handleAITask = async (task: 'optimize' | 'explain' | 'debug' | 'enhance' | 'convert') => {
     if (!aiService.hasApiKey()) {
-      alert('Please set your OpenRouter API key first in AI Settings');
+      setAiResponse('⚠️ Please set your OpenRouter API key first in AI Settings');
+      return;
+    }
+
+    if (!htmlCode.trim()) {
+      setAiResponse('⚠️ Please enter some HTML code in the editor first');
       return;
     }
 
@@ -41,10 +71,22 @@ const AISuggestionsPanel: React.FC<AISuggestionsPanelProps> = ({
         task,
         language: 'HTML'
       });
+      
       setAiResponse(response);
+      
+      // Add to history
+      const historyItem = {
+        id: Date.now().toString(),
+        prompt: `${task.charAt(0).toUpperCase() + task.slice(1)} Code`,
+        response,
+        timestamp: Date.now()
+      };
+      setResponseHistory(prev => [historyItem, ...prev.slice(0, 9)]); // Keep last 10
+      
     } catch (error) {
       console.error('AI Task Error:', error);
-      setAiResponse(`Error: ${error instanceof Error ? error.message : 'AI request failed'}`);
+      const errorMessage = error instanceof Error ? error.message : 'AI request failed';
+      setAiResponse(`❌ Error: ${errorMessage}\n\nPlease check your API key and try again.`);
     } finally {
       setIsLoading(false);
       setActiveTask('');
@@ -54,7 +96,7 @@ const AISuggestionsPanel: React.FC<AISuggestionsPanelProps> = ({
   const handleCustomPrompt = async () => {
     if (!customPrompt.trim()) return;
     if (!aiService.hasApiKey()) {
-      alert('Please set your OpenRouter API key first in AI Settings');
+      setAiResponse('⚠️ Please set your OpenRouter API key first in AI Settings');
       return;
     }
 
@@ -63,12 +105,27 @@ const AISuggestionsPanel: React.FC<AISuggestionsPanelProps> = ({
     setAiResponse('');
 
     try {
-      const fullPrompt = `${customPrompt}\n\nCurrent code:\n${htmlCode}`;
+      const fullPrompt = htmlCode.trim() 
+        ? `${customPrompt}\n\nCurrent code:\n${htmlCode}`
+        : customPrompt;
+      
       const response = await aiService.generateCode(fullPrompt);
       setAiResponse(response);
+      
+      // Add to history
+      const historyItem = {
+        id: Date.now().toString(),
+        prompt: customPrompt,
+        response,
+        timestamp: Date.now()
+      };
+      setResponseHistory(prev => [historyItem, ...prev.slice(0, 9)]);
+      
+      setCustomPrompt(''); // Clear prompt after successful request
     } catch (error) {
       console.error('Custom Prompt Error:', error);
-      setAiResponse(`Error: ${error instanceof Error ? error.message : 'AI request failed'}`);
+      const errorMessage = error instanceof Error ? error.message : 'AI request failed';
+      setAiResponse(`❌ Error: ${errorMessage}\n\nPlease check your API key and try again.`);
     } finally {
       setIsLoading(false);
       setActiveTask('');
@@ -77,66 +134,109 @@ const AISuggestionsPanel: React.FC<AISuggestionsPanelProps> = ({
 
   const applyAICode = () => {
     // Extract code from AI response (look for code blocks)
-    const codeMatch = aiResponse.match(/```(?:html|css|javascript)?\n?([\s\S]*?)\n?```/);
-    if (codeMatch) {
-      onCodeChange(codeMatch[1].trim());
+    const codeMatches = aiResponse.match(/```(?:html|css|javascript|js)?\n?([\s\S]*?)\n?```/g);
+    if (codeMatches && codeMatches.length > 0) {
+      // Get the largest code block (likely the main code)
+      const largestBlock = codeMatches.reduce((prev, current) => 
+        current.length > prev.length ? current : prev
+      );
+      const code = largestBlock.replace(/```(?:html|css|javascript|js)?\n?|```$/g, '').trim();
+      onCodeChange(code);
     } else {
-      // If no code blocks found, use the whole response
-      onCodeChange(aiResponse);
+      // If no code blocks found, try to extract HTML-like content
+      const htmlMatch = aiResponse.match(/<(!DOCTYPE|html|head|body|div|span|p|h[1-6]|a|img|ul|ol|li|table|form|input|button|script|style)[^>]*>[\s\S]*?<\/[^>]+>/i);
+      if (htmlMatch) {
+        onCodeChange(htmlMatch[0]);
+      } else {
+        // Use the whole response as fallback
+        onCodeChange(aiResponse);
+      }
     }
   };
 
   const copyResponse = async () => {
     try {
       await navigator.clipboard.writeText(aiResponse);
-      console.log('AI response copied to clipboard');
+      setCopySuccess(true);
+      setTimeout(() => setCopySuccess(false), 2000);
     } catch (err) {
       console.error('Failed to copy response:', err);
     }
+  };
+
+  const downloadResponse = () => {
+    const blob = new Blob([aiResponse], { type: 'text/plain' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `ai-response-${Date.now()}.txt`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
   };
 
   const quickActions = [
     {
       id: 'optimize',
       icon: Wand2,
-      label: 'Optimize Code',
+      label: 'Optimize',
       description: 'Improve performance & structure',
-      color: 'text-blue-500'
+      color: 'text-blue-500',
+      bgColor: 'bg-blue-500'
     },
     {
       id: 'enhance',
       icon: Sparkles,
-      label: 'Enhance Features',
-      description: 'Add modern features & styling',
-      color: 'text-purple-500'
+      label: 'Enhance',
+      description: 'Add modern features',
+      color: 'text-purple-500',
+      bgColor: 'bg-purple-500'
     },
     {
       id: 'debug',
       icon: Bug,
-      label: 'Debug Issues',
-      description: 'Find and fix problems',
-      color: 'text-red-500'
+      label: 'Debug',
+      description: 'Find & fix issues',
+      color: 'text-red-500',
+      bgColor: 'bg-red-500'
     },
     {
       id: 'explain',
       icon: MessageCircle,
-      label: 'Explain Code',
+      label: 'Explain',
       description: 'Get detailed explanation',
-      color: 'text-green-500'
+      color: 'text-green-500',
+      bgColor: 'bg-green-500'
     }
   ];
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
-      <div className={`relative max-w-4xl w-full h-[80vh] mx-4 rounded-lg flex ${
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50 p-2 sm:p-4">
+      <div className={`relative w-full max-w-6xl h-[90vh] sm:h-[85vh] rounded-lg flex flex-col sm:flex-row ${
         isDarkMode ? 'bg-gray-800 border border-gray-700' : 'bg-white border border-gray-200'
       }`}>
+        {/* Header - Mobile */}
+        <div className={`sm:hidden flex items-center justify-between p-4 border-b ${isDarkMode ? 'border-gray-700' : 'border-gray-200'}`}>
+          <div className="flex items-center space-x-2">
+            <Brain size={20} className="text-purple-500" />
+            <h3 className="font-semibold">AI Assistant</h3>
+          </div>
+          <button
+            onClick={onClose}
+            className={`p-1 rounded-lg ${isDarkMode ? 'hover:bg-gray-700' : 'hover:bg-gray-100'}`}
+          >
+            <X size={16} />
+          </button>
+        </div>
+
         {/* Left Panel - Controls */}
-        <div className={`w-1/3 border-r ${isDarkMode ? 'border-gray-700' : 'border-gray-200'}`}>
-          <div className="flex items-center justify-between p-4 border-b border-gray-200 dark:border-gray-700">
+        <div className={`w-full sm:w-1/3 ${isDarkMode ? 'border-gray-700' : 'border-gray-200'} sm:border-r flex flex-col`}>
+          {/* Desktop Header */}
+          <div className={`hidden sm:flex items-center justify-between p-4 border-b ${isDarkMode ? 'border-gray-700' : 'border-gray-200'}`}>
             <div className="flex items-center space-x-2">
               <Brain size={20} className="text-purple-500" />
-              <h3 className="font-semibold">🤖 AI Assistant</h3>
+              <h3 className="font-semibold">AI Assistant</h3>
             </div>
             <button
               onClick={onClose}
@@ -146,20 +246,39 @@ const AISuggestionsPanel: React.FC<AISuggestionsPanelProps> = ({
             </button>
           </div>
           
-          <div className="p-4 space-y-4">
+          <div className="flex-1 p-4 space-y-4 overflow-y-auto">
+            {/* Status */}
+            {!aiService.hasApiKey() && (
+              <div className={`p-3 rounded-lg border ${
+                isDarkMode 
+                  ? 'border-yellow-800 bg-yellow-900/20 text-yellow-200' 
+                  : 'border-yellow-200 bg-yellow-50 text-yellow-800'
+              }`}>
+                <div className="flex items-center space-x-2">
+                  <AlertCircle size={16} />
+                  <span className="text-sm">
+                    Please configure your API key in AI Settings first
+                  </span>
+                </div>
+              </div>
+            )}
+
             <div>
-              <h4 className="font-medium mb-3">Quick Actions</h4>
-              <div className="space-y-2">
+              <h4 className="font-medium mb-3 flex items-center space-x-2">
+                <Lightbulb size={16} className="text-yellow-500" />
+                <span>Quick Actions</span>
+              </h4>
+              <div className="grid grid-cols-2 sm:grid-cols-1 gap-2">
                 {quickActions.map((action) => (
                   <button
                     key={action.id}
                     onClick={() => handleAITask(action.id as any)}
-                    disabled={isLoading}
-                    className={`w-full p-3 rounded-lg border transition-all text-left ${
+                    disabled={isLoading || !aiService.hasApiKey()}
+                    className={`p-3 rounded-lg border transition-all text-left ${
                       isDarkMode 
                         ? 'border-gray-600 hover:border-gray-500 hover:bg-gray-700' 
                         : 'border-gray-200 hover:border-gray-300 hover:bg-gray-50'
-                    } ${isLoading ? 'opacity-50 cursor-not-allowed' : ''}`}
+                    } ${(isLoading || !aiService.hasApiKey()) ? 'opacity-50 cursor-not-allowed' : ''}`}
                   >
                     <div className="flex items-center space-x-3">
                       {activeTask === action.id ? (
@@ -167,9 +286,9 @@ const AISuggestionsPanel: React.FC<AISuggestionsPanelProps> = ({
                       ) : (
                         <action.icon size={18} className={action.color} />
                       )}
-                      <div>
+                      <div className="flex-1 min-w-0">
                         <div className="font-medium text-sm">{action.label}</div>
-                        <div className={`text-xs ${isDarkMode ? 'text-gray-400' : 'text-gray-600'}`}>
+                        <div className={`text-xs truncate ${isDarkMode ? 'text-gray-400' : 'text-gray-600'}`}>
                           {action.description}
                         </div>
                       </div>
@@ -184,19 +303,19 @@ const AISuggestionsPanel: React.FC<AISuggestionsPanelProps> = ({
               <textarea
                 value={customPrompt}
                 onChange={(e) => setCustomPrompt(e.target.value)}
-                placeholder="Describe what you want to do with your code..."
+                placeholder="Describe what you want to do..."
                 className={`w-full px-3 py-2 border rounded-lg resize-none ${
                   isDarkMode 
-                    ? 'bg-gray-700 border-gray-600 text-white' 
-                    : 'bg-white border-gray-300'
+                    ? 'bg-gray-700 border-gray-600 text-white placeholder-gray-400' 
+                    : 'bg-white border-gray-300 placeholder-gray-500'
                 }`}
                 rows={3}
               />
               <button
                 onClick={handleCustomPrompt}
-                disabled={isLoading || !customPrompt.trim()}
+                disabled={isLoading || !customPrompt.trim() || !aiService.hasApiKey()}
                 className={`w-full mt-2 p-2 rounded-lg transition-all ${
-                  customPrompt.trim() && !isLoading
+                  customPrompt.trim() && !isLoading && aiService.hasApiKey()
                     ? 'bg-purple-500 hover:bg-purple-600 text-white'
                     : 'bg-gray-300 text-gray-500 cursor-not-allowed'
                 }`}
@@ -211,22 +330,66 @@ const AISuggestionsPanel: React.FC<AISuggestionsPanelProps> = ({
                 </div>
               </button>
             </div>
+
+            {/* Response History */}
+            {responseHistory.length > 0 && (
+              <div>
+                <button
+                  onClick={() => setShowHistory(!showHistory)}
+                  className="w-full flex items-center justify-between p-2 text-sm font-medium"
+                >
+                  <span>Recent Responses ({responseHistory.length})</span>
+                  <RefreshCw size={14} className={showHistory ? 'rotate-180' : ''} />
+                </button>
+                {showHistory && (
+                  <div className="space-y-2 max-h-40 overflow-y-auto">
+                    {responseHistory.map((item) => (
+                      <button
+                        key={item.id}
+                        onClick={() => setAiResponse(item.response)}
+                        className={`w-full p-2 text-left text-sm rounded border ${
+                          isDarkMode 
+                            ? 'border-gray-600 hover:bg-gray-700' 
+                            : 'border-gray-200 hover:bg-gray-50'
+                        }`}
+                      >
+                        <div className="font-medium truncate">{item.prompt}</div>
+                        <div className={`text-xs ${isDarkMode ? 'text-gray-400' : 'text-gray-500'}`}>
+                          {new Date(item.timestamp).toLocaleTimeString()}
+                        </div>
+                      </button>
+                    ))}
+                  </div>
+                )}
+              </div>
+            )}
           </div>
         </div>
 
         {/* Right Panel - Response */}
-        <div className="flex-1 flex flex-col">
-          <div className="p-4 border-b border-gray-200 dark:border-gray-700">
+        <div className="flex-1 flex flex-col min-h-0">
+          <div className={`p-4 border-b ${isDarkMode ? 'border-gray-700' : 'border-gray-200'}`}>
             <div className="flex items-center justify-between">
               <h4 className="font-medium">AI Response</h4>
               {aiResponse && (
                 <div className="flex space-x-2">
                   <button
                     onClick={copyResponse}
-                    className={`p-2 rounded-lg ${isDarkMode ? 'hover:bg-gray-700' : 'hover:bg-gray-100'}`}
+                    className={`p-2 rounded-lg transition-colors ${
+                      isDarkMode ? 'hover:bg-gray-700' : 'hover:bg-gray-100'
+                    }`}
                     title="Copy Response"
                   >
-                    <Copy size={16} />
+                    {copySuccess ? <CheckCircle size={16} className="text-green-500" /> : <Copy size={16} />}
+                  </button>
+                  <button
+                    onClick={downloadResponse}
+                    className={`p-2 rounded-lg transition-colors ${
+                      isDarkMode ? 'hover:bg-gray-700' : 'hover:bg-gray-100'
+                    }`}
+                    title="Download Response"
+                  >
+                    <Download size={16} />
                   </button>
                   <button
                     onClick={applyAICode}
@@ -240,7 +403,7 @@ const AISuggestionsPanel: React.FC<AISuggestionsPanelProps> = ({
             </div>
           </div>
           
-          <div className="flex-1 p-4 overflow-auto">
+          <div className="flex-1 overflow-hidden">
             {isLoading ? (
               <div className="flex items-center justify-center h-full">
                 <div className="text-center">
@@ -251,18 +414,23 @@ const AISuggestionsPanel: React.FC<AISuggestionsPanelProps> = ({
                 </div>
               </div>
             ) : aiResponse ? (
-              <div className={`p-4 rounded-lg ${
-                isDarkMode ? 'bg-gray-700' : 'bg-gray-50'
-              }`}>
-                <pre className="whitespace-pre-wrap text-sm leading-relaxed">
-                  {aiResponse}
-                </pre>
+              <div ref={responseRef} className="h-full overflow-y-auto p-4">
+                <div className={`p-4 rounded-lg ${
+                  isDarkMode ? 'bg-gray-700' : 'bg-gray-50'
+                }`}>
+                  <pre className="whitespace-pre-wrap text-sm leading-relaxed font-mono">
+                    {aiResponse}
+                  </pre>
+                </div>
               </div>
             ) : (
               <div className="flex items-center justify-center h-full">
-                <p className={`text-center ${isDarkMode ? 'text-gray-400' : 'text-gray-600'}`}>
-                  Select an action or enter a custom request to get AI assistance
-                </p>
+                <div className="text-center max-w-md px-4">
+                  <Brain size={48} className="mx-auto mb-4 text-purple-500 opacity-50" />
+                  <p className={`text-center ${isDarkMode ? 'text-gray-400' : 'text-gray-600'}`}>
+                    Select an action or enter a custom request to get AI assistance with your HTML code
+                  </p>
+                </div>
               </div>
             )}
           </div>

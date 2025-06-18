@@ -5,6 +5,10 @@ interface OpenRouterResponse {
       content: string;
     };
   }[];
+  error?: {
+    message: string;
+    code: string;
+  };
 }
 
 interface AIEnhancementRequest {
@@ -16,10 +20,12 @@ interface AIEnhancementRequest {
 export class AIService {
   private static instance: AIService;
   private apiKey: string = '';
+  private requestCache: Map<string, { response: string; timestamp: number }> = new Map();
+  private readonly CACHE_DURATION = 5 * 60 * 1000; // 5 minutes
 
   private constructor() {
     // Load API key from localStorage
-    this.apiKey = localStorage.getItem('openrouter-api-key') || '';
+    this.loadApiKey();
   }
 
   static getInstance(): AIService {
@@ -29,9 +35,22 @@ export class AIService {
     return AIService.instance;
   }
 
+  private loadApiKey(): void {
+    try {
+      this.apiKey = localStorage.getItem('openrouter-api-key') || '';
+    } catch (error) {
+      console.warn('Failed to load API key from localStorage:', error);
+      this.apiKey = '';
+    }
+  }
+
   setApiKey(apiKey: string): void {
     this.apiKey = apiKey;
-    localStorage.setItem('openrouter-api-key', apiKey);
+    try {
+      localStorage.setItem('openrouter-api-key', apiKey);
+    } catch (error) {
+      console.warn('Failed to save API key to localStorage:', error);
+    }
   }
 
   getApiKey(): string {
@@ -39,101 +58,188 @@ export class AIService {
   }
 
   hasApiKey(): boolean {
-    return this.apiKey.length > 0;
+    return this.apiKey.length > 0 && this.apiKey.startsWith('sk-or-v1-');
+  }
+
+  private getCacheKey(content: string, task?: string): string {
+    return `${task || 'generate'}-${content.slice(0, 100)}`;
+  }
+
+  private getCachedResponse(cacheKey: string): string | null {
+    const cached = this.requestCache.get(cacheKey);
+    if (cached && Date.now() - cached.timestamp < this.CACHE_DURATION) {
+      return cached.response;
+    }
+    if (cached) {
+      this.requestCache.delete(cacheKey);
+    }
+    return null;
+  }
+
+  private setCachedResponse(cacheKey: string, response: string): void {
+    this.requestCache.set(cacheKey, {
+      response,
+      timestamp: Date.now()
+    });
+
+    // Clean up old cache entries
+    if (this.requestCache.size > 50) {
+      const oldestKey = Array.from(this.requestCache.keys())[0];
+      this.requestCache.delete(oldestKey);
+    }
+  }
+
+  private async makeRequest(messages: any[], maxTokens: number = 2000): Promise<string> {
+    if (!this.hasApiKey()) {
+      throw new Error('Valid OpenRouter API key is required. Please check your API key format.');
+    }
+
+    const response = await fetch('https://openrouter.ai/api/v1/chat/completions', {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${this.apiKey}`,
+        'Content-Type': 'application/json',
+        'HTTP-Referer': window.location.origin,
+        'X-Title': 'HTML Editor AI Assistant'
+      },
+      body: JSON.stringify({
+        model: 'meta-llama/llama-3.1-8b-instruct:free',
+        messages,
+        temperature: 0.7,
+        max_tokens: maxTokens,
+        top_p: 0.9,
+        frequency_penalty: 0.1,
+        presence_penalty: 0.1
+      })
+    });
+
+    if (!response.ok) {
+      if (response.status === 401) {
+        throw new Error('Invalid API key. Please check your OpenRouter API key.');
+      } else if (response.status === 429) {
+        throw new Error('Rate limit exceeded. Please try again in a moment.');
+      } else if (response.status === 402) {
+        throw new Error('Insufficient credits. Please add credits to your OpenRouter account.');
+      } else {
+        throw new Error(`API request failed: ${response.status} ${response.statusText}`);
+      }
+    }
+
+    const data: OpenRouterResponse = await response.json();
+    
+    if (data.error) {
+      throw new Error(`OpenRouter Error: ${data.error.message}`);
+    }
+
+    const content = data.choices?.[0]?.message?.content;
+    if (!content) {
+      throw new Error('No response received from AI service');
+    }
+
+    return content;
   }
 
   async enhanceCode(request: AIEnhancementRequest): Promise<string> {
-    if (!this.hasApiKey()) {
-      throw new Error('OpenRouter API key is required');
+    const cacheKey = this.getCacheKey(request.code, request.task);
+    const cachedResponse = this.getCachedResponse(cacheKey);
+    
+    if (cachedResponse) {
+      return cachedResponse;
     }
 
     const prompts = {
-      optimize: `Optimize this ${request.language || 'HTML'} code for better performance and readability:\n\n${request.code}`,
-      explain: `Explain what this ${request.language || 'HTML'} code does in simple terms:\n\n${request.code}`,
-      debug: `Find and fix any issues in this ${request.language || 'HTML'} code:\n\n${request.code}`,
-      enhance: `Enhance this ${request.language || 'HTML'} code with modern best practices and features:\n\n${request.code}`,
-      convert: `Convert this code to modern ${request.language || 'HTML'} with better structure:\n\n${request.code}`
+      optimize: `Optimize this ${request.language || 'HTML'} code for better performance, accessibility, and SEO. Focus on:\n- Code structure and organization\n- Performance improvements\n- Accessibility best practices\n- SEO optimization\n- Modern web standards\n\nCode:\n${request.code}`,
+      
+      explain: `Explain this ${request.language || 'HTML'} code in a clear, beginner-friendly way. Include:\n- What the code does\n- Key features and functionality\n- How different parts work together\n- Any notable techniques used\n\nCode:\n${request.code}`,
+      
+      debug: `Analyze this ${request.language || 'HTML'} code and identify potential issues:\n- Syntax errors\n- Logic problems\n- Performance issues\n- Accessibility concerns\n- Best practice violations\n\nProvide fixes for any issues found.\n\nCode:\n${request.code}`,
+      
+      enhance: `Enhance this ${request.language || 'HTML'} code with modern features and best practices:\n- Add responsive design\n- Improve user experience\n- Add interactive elements\n- Implement modern CSS/JS features\n- Ensure accessibility\n\nCode:\n${request.code}`,
+      
+      convert: `Convert and modernize this ${request.language || 'HTML'} code:\n- Use semantic HTML5 elements\n- Apply modern CSS techniques\n- Add responsive design\n- Improve code structure\n- Follow current web standards\n\nCode:\n${request.code}`
     };
 
     try {
-      const response = await fetch('https://openrouter.ai/api/v1/chat/completions', {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${this.apiKey}`,
-          'Content-Type': 'application/json',
-          'HTTP-Referer': window.location.origin,
-          'X-Title': 'HTML Editor AI Assistant'
+      const messages = [
+        {
+          role: 'system',
+          content: 'You are an expert web developer assistant. Provide clean, optimized, and well-commented code. Always explain your changes and improvements clearly.'
         },
-        body: JSON.stringify({
-          model: 'meta-llama/llama-3.1-8b-instruct:free',
-          messages: [
-            {
-              role: 'system',
-              content: 'You are a helpful web development assistant. Provide clean, optimized code and clear explanations.'
-            },
-            {
-              role: 'user',
-              content: prompts[request.task]
-            }
-          ],
-          temperature: 0.7,
-          max_tokens: 2000
-        })
-      });
+        {
+          role: 'user',
+          content: prompts[request.task]
+        }
+      ];
 
-      if (!response.ok) {
-        throw new Error(`OpenRouter API error: ${response.status}`);
-      }
-
-      const data: OpenRouterResponse = await response.json();
-      return data.choices[0]?.message?.content || 'No response from AI';
+      const response = await this.makeRequest(messages, 3000);
+      this.setCachedResponse(cacheKey, response);
+      return response;
     } catch (error) {
-      console.error('AI Service Error:', error);
+      console.error('AI Enhancement Error:', error);
       throw error;
     }
   }
 
   async generateCode(prompt: string): Promise<string> {
-    if (!this.hasApiKey()) {
-      throw new Error('OpenRouter API key is required');
+    const cacheKey = this.getCacheKey(prompt);
+    const cachedResponse = this.getCachedResponse(cacheKey);
+    
+    if (cachedResponse) {
+      return cachedResponse;
     }
 
     try {
-      const response = await fetch('https://openrouter.ai/api/v1/chat/completions', {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${this.apiKey}`,
-          'Content-Type': 'application/json',
-          'HTTP-Referer': window.location.origin,
-          'X-Title': 'HTML Editor AI Assistant'
+      const messages = [
+        {
+          role: 'system',
+          content: 'You are a skilled web developer. Generate clean, modern, and responsive HTML/CSS/JavaScript code based on user requests. Focus on:\n- Semantic HTML structure\n- Responsive design\n- Accessibility\n- Modern CSS techniques\n- Clean, readable code\n- Best practices\n\nOnly return the code with minimal explanation unless specifically asked for detailed explanations.'
         },
-        body: JSON.stringify({
-          model: 'meta-llama/llama-3.1-8b-instruct:free',
-          messages: [
-            {
-              role: 'system',
-              content: 'You are a web development assistant. Generate clean, modern HTML/CSS/JavaScript code based on user requests. Only return the code, no explanations unless asked.'
-            },
-            {
-              role: 'user',
-              content: prompt
-            }
-          ],
-          temperature: 0.8,
-          max_tokens: 3000
-        })
-      });
+        {
+          role: 'user',
+          content: prompt
+        }
+      ];
 
-      if (!response.ok) {
-        throw new Error(`OpenRouter API error: ${response.status}`);
-      }
-
-      const data: OpenRouterResponse = await response.json();
-      return data.choices[0]?.message?.content || 'No response from AI';
+      const response = await this.makeRequest(messages, 4000);
+      this.setCachedResponse(cacheKey, response);
+      return response;
     } catch (error) {
-      console.error('AI Service Error:', error);
+      console.error('AI Generation Error:', error);
       throw error;
     }
+  }
+
+  async quickSuggestion(code: string): Promise<string> {
+    const cacheKey = this.getCacheKey(code, 'quick');
+    const cachedResponse = this.getCachedResponse(cacheKey);
+    
+    if (cachedResponse) {
+      return cachedResponse;
+    }
+
+    try {
+      const messages = [
+        {
+          role: 'system',
+          content: 'Provide a quick suggestion to improve this code. Be concise but helpful.'
+        },
+        {
+          role: 'user',
+          content: `Suggest one quick improvement for this code:\n${code.slice(0, 1000)}`
+        }
+      ];
+
+      const response = await this.makeRequest(messages, 500);
+      this.setCachedResponse(cacheKey, response);
+      return response;
+    } catch (error) {
+      console.error('AI Quick Suggestion Error:', error);
+      throw error;
+    }
+  }
+
+  clearCache(): void {
+    this.requestCache.clear();
   }
 }
 
