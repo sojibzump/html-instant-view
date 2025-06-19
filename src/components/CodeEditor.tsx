@@ -1,3 +1,4 @@
+
 import React, { useEffect, useState, useCallback, useMemo } from 'react';
 import Editor from '@monaco-editor/react';
 import { MousePointer, FileCode2, AlertTriangle, Smartphone, Tablet, Copy, Clipboard, Trash2, RotateCcw, Save, Download, Upload } from 'lucide-react';
@@ -97,25 +98,28 @@ const CodeEditor: React.FC<CodeEditorProps> = ({
     }
   };
 
-  const handleClearCode = useCallback(() => {
-    console.log('Clear code button clicked');
+  // Fix: Simplified clear code handler without callback
+  const handleClearCode = () => {
+    console.log('🗑️ Clear code button clicked');
     const confirmed = window.confirm('আপনি কি নিশ্চিত যে সব কোড ডিলিট করতে চান? এই কাজটি আর ফিরিয়ে আনা যাবে না।');
     if (confirmed) {
-      console.log('User confirmed deletion, clearing code...');
+      console.log('✅ User confirmed, clearing code...');
+      // Direct call to clear code
       onCodeChange('');
-      console.log('Code cleared successfully');
       showMessage('সব কোড ডিলিট হয়েছে!');
+      console.log('🎉 Code cleared successfully');
       
       // Focus editor after clearing
       setTimeout(() => {
         if (editorRef.current) {
           editorRef.current.focus();
+          console.log('📝 Editor focused after clear');
         }
       }, 100);
     } else {
-      console.log('User cancelled deletion');
+      console.log('❌ User cancelled deletion');
     }
-  }, [onCodeChange, editorRef]);
+  };
 
   const handleUndoCode = () => {
     if (editorRef.current) {
@@ -162,6 +166,14 @@ const CodeEditor: React.FC<CodeEditorProps> = ({
     };
     input.click();
   };
+
+  // Fix: Stable editor change handler
+  const handleEditorChange = useCallback((value: string | undefined) => {
+    const newCode = value || '';
+    console.log('📝 Editor change:', newCode.length, 'characters');
+    // Debounce to prevent rapid calls
+    onCodeChange(newCode);
+  }, [onCodeChange]);
 
   const errorCount = validationResult.errors.filter(e => e.type === 'error').length;
   const warningCount = validationResult.errors.filter(e => e.type === 'warning').length;
@@ -348,10 +360,7 @@ const CodeEditor: React.FC<CodeEditorProps> = ({
           height="100%"
           language={language}
           value={htmlCode}
-          onChange={(value) => {
-            console.log('Editor onChange triggered, new value length:', value?.length || 0);
-            onCodeChange(value || '');
-          }}
+          onChange={handleEditorChange}
           onMount={onEditorDidMount}
           theme={isDarkMode ? 'custom-dark' : 'custom-light'}
           options={{
