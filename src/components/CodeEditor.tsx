@@ -97,12 +97,14 @@ const CodeEditor: React.FC<CodeEditorProps> = ({
     }
   };
 
-  const handleClearCode = () => {
+  const handleClearCode = useCallback(() => {
+    console.log('Clear code button clicked');
     const confirmed = window.confirm('আপনি কি নিশ্চিত যে সব কোড ডিলিট করতে চান? এই কাজটি আর ফিরিয়ে আনা যাবে না।');
     if (confirmed) {
-      console.log('Clearing code - before:', htmlCode.length);
+      console.log('User confirmed deletion, clearing code...');
       onCodeChange('');
       console.log('Code cleared successfully');
+      showMessage('সব কোড ডিলিট হয়েছে!');
       
       // Focus editor after clearing
       setTimeout(() => {
@@ -110,10 +112,10 @@ const CodeEditor: React.FC<CodeEditorProps> = ({
           editorRef.current.focus();
         }
       }, 100);
-      
-      showMessage('সব কোড ডিলিট হয়েছে!');
+    } else {
+      console.log('User cancelled deletion');
     }
-  };
+  }, [onCodeChange, editorRef]);
 
   const handleUndoCode = () => {
     if (editorRef.current) {

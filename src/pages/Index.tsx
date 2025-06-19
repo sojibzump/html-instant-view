@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import Header from '../components/Header';
 import AdSidebar from '../components/AdSidebar';
@@ -196,10 +197,11 @@ const Index = () => {
     console.log('Code change handler called, new code length:', newCode.length);
     setHtmlCode(newCode);
     
-    // Update preview immediately
+    // Update preview immediately with error handling
     if (previewRef.current) {
       try {
         previewRef.current.srcdoc = newCode;
+        console.log('Preview updated successfully');
       } catch (error) {
         console.error('Preview update error:', error);
       }
@@ -279,17 +281,18 @@ const Index = () => {
     }
   };
 
-  const clearCode = () => {
-    console.log('Clear code function called');
-    const confirmed = window.confirm('Are you sure you want to clear all code? This action cannot be undone.');
+  const clearCode = useCallback(() => {
+    console.log('Clear code function called from Index');
+    const confirmed = window.confirm('আপনি কি নিশ্চিত যে সব কোড ডিলিট করতে চান? এই কাজটি আর ফিরিয়ে আনা যাবে না।');
     if (confirmed) {
-      console.log('User confirmed code clearing');
+      console.log('User confirmed code clearing from Index');
       setHtmlCode('');
       if (editorRef.current) {
         editorRef.current.focus();
       }
+      console.log('Code cleared from Index successfully');
     }
-  };
+  }, []);
 
   const saveProject = () => {
     const projectName = prompt('Enter project name:');

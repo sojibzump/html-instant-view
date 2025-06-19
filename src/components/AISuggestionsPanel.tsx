@@ -1,3 +1,4 @@
+
 import React, { useState, useRef, useEffect } from 'react';
 import { 
   Brain, 
@@ -42,6 +43,7 @@ const AISuggestionsPanel: React.FC<AISuggestionsPanelProps> = ({
   const [codeComparison, setCodeComparison] = useState(false);
   const [originalCode, setOriginalCode] = useState('');
   const [aiSuggestionMode, setAiSuggestionMode] = useState<'replace' | 'append' | 'merge'>('replace');
+  const [extractedCode, setExtractedCode] = useState('');
   const responseRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -67,6 +69,7 @@ const AISuggestionsPanel: React.FC<AISuggestionsPanelProps> = ({
     setActiveTask(task);
     setAiResponse('');
     setOriginalCode(htmlCode);
+    setExtractedCode('');
 
     try {
       console.log('AI Task started:', task);
@@ -78,6 +81,11 @@ const AISuggestionsPanel: React.FC<AISuggestionsPanelProps> = ({
       
       console.log('AI Response received:', response.substring(0, 100) + '...');
       setAiResponse(response);
+      
+      // Extract code immediately
+      const code = extractCodeFromResponse(response);
+      setExtractedCode(code);
+      console.log('Extracted code:', code.substring(0, 100) + '...');
       
       // Add to history
       const historyItem = {
@@ -108,6 +116,7 @@ const AISuggestionsPanel: React.FC<AISuggestionsPanelProps> = ({
     setIsLoading(true);
     setActiveTask('custom');
     setAiResponse('');
+    setExtractedCode('');
 
     try {
       const fullPrompt = htmlCode.trim() 
@@ -118,6 +127,10 @@ const AISuggestionsPanel: React.FC<AISuggestionsPanelProps> = ({
       const response = await aiService.generateCode(fullPrompt);
       console.log('Custom prompt response received');
       setAiResponse(response);
+      
+      // Extract code immediately
+      const code = extractCodeFromResponse(response);
+      setExtractedCode(code);
       
       // Add to history
       const historyItem = {
@@ -144,13 +157,10 @@ const AISuggestionsPanel: React.FC<AISuggestionsPanelProps> = ({
     
     // First try to find code blocks with ```
     const codeBlockRegex = /```(?:html|xml|[a-z]*)\n?([\s\S]*?)```/gi;
-    const codeBlocks = response.match(codeBlockRegex);
+    const matches = [...response.matchAll(codeBlockRegex)];
     
-    if (codeBlocks && codeBlocks.length > 0) {
-      const cleanCode = codeBlocks[0]
-        .replace(/```[a-z]*\n?/gi, '')
-        .replace(/```/g, '')
-        .trim();
+    if (matches.length > 0) {
+      const cleanCode = matches[0][1].trim();
       console.log('Found code block, extracted:', cleanCode.substring(0, 100) + '...');
       return cleanCode;
     }
@@ -171,21 +181,40 @@ const AISuggestionsPanel: React.FC<AISuggestionsPanelProps> = ({
       return tagMatch[0];
     }
     
-    // If no specific code found, return the whole response cleaned
-    const cleaned = response
-      .replace(/^[^<]*(?=<)/s, '') // Remove text before first HTML tag
-      .replace(/\n\n.*explanation.*$/is, '') // Remove explanations
-      .trim();
+    // If no specific code found, look for lines that look like code
+    const lines = response.split('\n');
+    const codeLines = lines.filter(line => 
+      line.trim().startsWith('<') || 
+      line.trim().includes('class=') || 
+      line.trim().includes('style=') ||
+      line.trim().includes('<!DOCTYPE')
+    );
     
-    console.log('Using cleaned response');
-    return cleaned || response;
+    if (codeLines.length > 0) {
+      const extracted = codeLines.join('\n').trim();
+      console.log('Found code-like lines');
+      return extracted;
+    }
+    
+    // Last resort - return the whole response if it looks like code
+    if (response.includes('<') && response.includes('>')) {
+      console.log('Using whole response as code');
+      return response.trim();
+    }
+    
+    console.log('No code found, returning empty');
+    return '';
   };
 
   const applyAICode = () => {
-    if (!aiResponse) return;
+    const codeToApply = extractedCode || extractCodeFromResponse(aiResponse);
+    
+    if (!codeToApply) {
+      console.log('No code to apply');
+      return;
+    }
     
     console.log('Applying AI code...');
-    const codeToApply = extractCodeFromResponse(aiResponse);
     
     if (aiSuggestionMode === 'append') {
       onCodeChange(htmlCode + '\n\n' + codeToApply);
@@ -200,7 +229,8 @@ const AISuggestionsPanel: React.FC<AISuggestionsPanelProps> = ({
 
   const copyResponse = async () => {
     try {
-      await navigator.clipboard.writeText(aiResponse);
+      const textToCopy = extractedCode || aiResponse;
+      await navigator.clipboard.writeText(textToCopy);
       setCopySuccess(true);
       setTimeout(() => setCopySuccess(false), 2000);
     } catch (err) {
@@ -209,7 +239,8 @@ const AISuggestionsPanel: React.FC<AISuggestionsPanelProps> = ({
   };
 
   const downloadResponse = () => {
-    const blob = new Blob([aiResponse], { type: 'text/plain' });
+    const content = extractedCode || aiResponse;
+    const blob = new Blob([content], { type: 'text/plain' });
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
@@ -438,7 +469,10 @@ const AISuggestionsPanel: React.FC<AISuggestionsPanelProps> = ({
                     {responseHistory.map((item) => (
                       <button
                         key={item.id}
-                        onClick={() => setAiResponse(item.response)}
+                        onClick={() => {
+                          setAiResponse(item.response);
+                          setExtractedCode(extractCodeFromResponse(item.response));
+                        }}
                         className={`w-full p-2 text-left text-sm rounded border ${
                           isDarkMode 
                             ? 'border-gray-600 hover:bg-gray-700' 
@@ -463,14 +497,14 @@ const AISuggestionsPanel: React.FC<AISuggestionsPanelProps> = ({
           <div className={`p-4 border-b ${isDarkMode ? 'border-gray-700' : 'border-gray-200'}`}>
             <div className="flex items-center justify-between">
               <h4 className="font-medium">AI Response</h4>
-              {aiResponse && (
+              {(aiResponse || extractedCode) && (
                 <div className="flex space-x-2">
                   <button
                     onClick={copyResponse}
                     className={`p-2 rounded-lg transition-colors ${
                       isDarkMode ? 'hover:bg-gray-700' : 'hover:bg-gray-100'
                     }`}
-                    title="Copy Response"
+                    title="Copy Code"
                   >
                     {copySuccess ? <CheckCircle size={16} className="text-green-500" /> : <Copy size={16} />}
                   </button>
@@ -479,17 +513,19 @@ const AISuggestionsPanel: React.FC<AISuggestionsPanelProps> = ({
                     className={`p-2 rounded-lg transition-colors ${
                       isDarkMode ? 'hover:bg-gray-700' : 'hover:bg-gray-100'
                     }`}
-                    title="Download Response"
+                    title="Download Code"
                   >
                     <Download size={16} />
                   </button>
-                  <button
-                    onClick={applyAICode}
-                    className="px-3 py-2 bg-green-500 hover:bg-green-600 text-white rounded-lg text-sm font-medium"
-                    title="Apply to Editor"
-                  >
-                    Apply Code
-                  </button>
+                  {extractedCode && (
+                    <button
+                      onClick={applyAICode}
+                      className="px-3 py-2 bg-green-500 hover:bg-green-600 text-white rounded-lg text-sm font-medium"
+                      title="Apply to Editor"
+                    >
+                      Apply Code
+                    </button>
+                  )}
                 </div>
               )}
             </div>
@@ -507,13 +543,32 @@ const AISuggestionsPanel: React.FC<AISuggestionsPanelProps> = ({
               </div>
             ) : aiResponse ? (
               <div ref={responseRef} className="h-full overflow-y-auto p-4">
-                <div className={`p-4 rounded-lg ${
-                  isDarkMode ? 'bg-gray-700' : 'bg-gray-50'
-                }`}>
-                  <pre className="whitespace-pre-wrap text-sm leading-relaxed font-mono overflow-x-auto">
-                    {aiResponse}
-                  </pre>
-                </div>
+                {/* Show extracted code if available */}
+                {extractedCode ? (
+                  <div className="space-y-4">
+                    <div className={`p-4 rounded-lg border-l-4 border-green-500 ${
+                      isDarkMode ? 'bg-gray-700' : 'bg-green-50'
+                    }`}>
+                      <h5 className="font-medium text-green-600 mb-2">✅ Extracted Code:</h5>
+                      <pre className="whitespace-pre-wrap text-sm leading-relaxed font-mono overflow-x-auto bg-gray-900 text-green-400 p-3 rounded">
+                        {extractedCode}
+                      </pre>
+                    </div>
+                    
+                    <div className={`p-4 rounded-lg ${isDarkMode ? 'bg-gray-700' : 'bg-gray-50'}`}>
+                      <h5 className="font-medium mb-2">Full Response:</h5>
+                      <pre className="whitespace-pre-wrap text-sm leading-relaxed font-mono overflow-x-auto">
+                        {aiResponse}
+                      </pre>
+                    </div>
+                  </div>
+                ) : (
+                  <div className={`p-4 rounded-lg ${isDarkMode ? 'bg-gray-700' : 'bg-gray-50'}`}>
+                    <pre className="whitespace-pre-wrap text-sm leading-relaxed font-mono overflow-x-auto">
+                      {aiResponse}
+                    </pre>
+                  </div>
+                )}
               </div>
             ) : (
               <div className="flex items-center justify-center h-full">
