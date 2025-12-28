@@ -9,14 +9,17 @@ import {
   Copy, 
   Clipboard, 
   Trash2, 
-  RotateCcw, 
   Save, 
   Download, 
   Upload,
   Check,
   Undo2,
   Redo2,
-  Search
+  Search,
+  Scissors,
+  Eraser,
+  CopyPlus,
+  Minus
 } from 'lucide-react';
 import { validateXML, detectLanguage, ValidationResult } from '../utils/xmlValidator';
 import { ClipboardUtils } from '../utils/clipboardUtils';
@@ -126,6 +129,44 @@ const CodeEditor: React.FC<CodeEditorProps> = ({
           editorRef.current.focus();
         }
       }, 100);
+    }
+  };
+
+  const handleCutSelection = async () => {
+    const success = await ClipboardUtils.cutSelection(editorRef.current);
+    if (success) {
+      showMessage('Selection cut to clipboard!');
+    }
+  };
+
+  const handleCopySelection = async () => {
+    const success = await ClipboardUtils.copySelection(editorRef.current);
+    if (success) {
+      showMessage('Selection copied!');
+    } else {
+      // If no selection, copy all
+      handleCopyCode();
+    }
+  };
+
+  const handleDeleteSelection = () => {
+    const success = ClipboardUtils.deleteSelection(editorRef.current);
+    if (success) {
+      showMessage('Selection deleted!');
+    }
+  };
+
+  const handleDeleteLine = () => {
+    const success = ClipboardUtils.deleteLine(editorRef.current);
+    if (success) {
+      showMessage('Line deleted!');
+    }
+  };
+
+  const handleDuplicateLine = () => {
+    const success = ClipboardUtils.duplicateLine(editorRef.current);
+    if (success) {
+      showMessage('Line duplicated!');
     }
   };
 
@@ -327,16 +368,19 @@ const CodeEditor: React.FC<CodeEditorProps> = ({
             </button>
             
             <div className="flex items-center space-x-0.5">
-              <ActionButton onClick={handleCopyCode} icon={Copy} title="Copy all code (Ctrl+C)" />
+              <ActionButton onClick={handleCopySelection} icon={Copy} title="Copy (Ctrl+C)" />
+              <ActionButton onClick={handleCutSelection} icon={Scissors} title="Cut (Ctrl+X)" />
               {canPaste && (
-                <ActionButton onClick={handlePasteCode} icon={Clipboard} title="Paste code (Ctrl+V)" />
+                <ActionButton onClick={handlePasteCode} icon={Clipboard} title="Paste (Ctrl+V)" />
               )}
+              <ActionButton onClick={handleDeleteSelection} icon={Eraser} title="Delete selection" variant="danger" />
               
               <div className={`w-px h-6 mx-1 ${isDarkMode ? 'bg-border' : 'bg-border'}`} />
               
               <ActionButton onClick={handleUndo} icon={Undo2} title="Undo (Ctrl+Z)" />
               <ActionButton onClick={handleRedo} icon={Redo2} title="Redo (Ctrl+Y)" />
               <ActionButton onClick={handleFindReplace} icon={Search} title="Find & Replace (Ctrl+F)" />
+              <ActionButton onClick={handleDuplicateLine} icon={CopyPlus} title="Duplicate line (Ctrl+D)" />
               
               <div className={`w-px h-6 mx-1 ${isDarkMode ? 'bg-border' : 'bg-border'}`} />
               
@@ -346,6 +390,7 @@ const CodeEditor: React.FC<CodeEditorProps> = ({
               
               <div className={`w-px h-6 mx-1 ${isDarkMode ? 'bg-border' : 'bg-border'}`} />
               
+              <ActionButton onClick={handleDeleteLine} icon={Minus} title="Delete line (Ctrl+Shift+K)" variant="danger" />
               <ActionButton onClick={handleClearCode} icon={Trash2} title="Clear all code" variant="danger" />
             </div>
           </div>
