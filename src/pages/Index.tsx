@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import Header from '../components/Header';
 import AdSidebar from '../components/AdSidebar';
@@ -14,11 +13,13 @@ import CodeFormatter from '../components/CodeFormatter';
 import AutoSaveSettings from '../components/AutoSaveSettings';
 import CodeSnippets from '../components/CodeSnippets';
 import EnhancedToolbar from '../components/EnhancedToolbar';
+import ShareModal from '../components/ShareModal';
 import { BloggerTemplate } from '../data/bloggerTemplates';
 import { ValidationResult } from '../utils/xmlValidator';
 import { adRevenueSystem } from '../utils/adRevenueSystem';
 import AISuggestionsPanel from '../components/AISuggestionsPanel';
 import AISettings from '../components/AISettings';
+import { useToast } from '../hooks/use-toast';
 
 const Index = () => {
   const [htmlCode, setHtmlCode] = useState(`<!DOCTYPE html>
@@ -117,9 +118,37 @@ const Index = () => {
   const [showSearchReplace, setShowSearchReplace] = useState(false);
   const [showAISettings, setShowAISettings] = useState(false);
   const [showAISuggestions, setShowAISuggestions] = useState(false);
+  const [showShareModal, setShowShareModal] = useState(false);
   
   const editorRef = useRef<any>(null);
   const previewRef = useRef<HTMLIFrameElement>(null);
+  const { toast } = useToast();
+
+  // Load code from URL if shared
+  useEffect(() => {
+    const urlParams = new URLSearchParams(window.location.search);
+    const sharedCode = urlParams.get('code');
+    
+    if (sharedCode) {
+      try {
+        const decodedCode = decodeURIComponent(atob(sharedCode));
+        setHtmlCode(decodedCode);
+        toast({
+          title: "Shared Code Loaded",
+          description: "Code from shared link has been loaded successfully!",
+        });
+        // Clear the URL parameter after loading
+        window.history.replaceState({}, document.title, window.location.pathname);
+      } catch (error) {
+        console.error('Error decoding shared code:', error);
+        toast({
+          title: "Error Loading Code",
+          description: "Failed to load shared code from URL.",
+          variant: "destructive",
+        });
+      }
+    }
+  }, []);
 
   useEffect(() => {
     // Load saved projects from localStorage
@@ -128,10 +157,13 @@ const Index = () => {
       setSavedProjects(JSON.parse(saved));
     }
     
-    // Load last saved code
-    const lastCode = localStorage.getItem('htmlEditorLastCode');
-    if (lastCode) {
-      setHtmlCode(lastCode);
+    // Load last saved code (only if not loading from URL)
+    const urlParams = new URLSearchParams(window.location.search);
+    if (!urlParams.get('code')) {
+      const lastCode = localStorage.getItem('htmlEditorLastCode');
+      if (lastCode) {
+        setHtmlCode(lastCode);
+      }
     }
 
     // Track initial ad impressions for revenue system
@@ -381,7 +413,7 @@ const Index = () => {
           onShowSnippets={() => setShowCodeSnippets(true)}
           onShowThemeCustomizer={() => setShowThemeCustomizer(true)}
           onShowPreviewSettings={() => setShowPreviewSettings(true)}
-          onShowShareOptions={() => setShowShareOptions(true)}
+          onShowShareOptions={() => setShowShareModal(true)}
           onShowSearchReplace={() => setShowSearchReplace(true)}
           onShowAISettings={() => setShowAISettings(true)}
           onShowAISuggestions={() => setShowAISuggestions(true)}
@@ -497,6 +529,14 @@ const Index = () => {
         onClose={() => setShowAISuggestions(false)}
         htmlCode={htmlCode}
         onCodeChange={handleCodeChange}
+      />
+
+      {/* Share Modal */}
+      <ShareModal
+        isDarkMode={isDarkMode}
+        isVisible={showShareModal}
+        onClose={() => setShowShareModal(false)}
+        htmlCode={htmlCode}
       />
 
       {/* Footer */}
