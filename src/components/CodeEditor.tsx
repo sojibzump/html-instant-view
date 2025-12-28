@@ -1,9 +1,26 @@
-
 import React, { useEffect, useState, useCallback, useMemo } from 'react';
 import Editor from '@monaco-editor/react';
-import { MousePointer, FileCode2, AlertTriangle, Smartphone, Tablet, Copy, Clipboard, Trash2, RotateCcw, Save, Download, Upload } from 'lucide-react';
+import { 
+  FileCode2, 
+  AlertTriangle, 
+  Smartphone, 
+  Tablet, 
+  Monitor,
+  Copy, 
+  Clipboard, 
+  Trash2, 
+  RotateCcw, 
+  Save, 
+  Download, 
+  Upload,
+  Check,
+  Undo2,
+  Redo2,
+  Search
+} from 'lucide-react';
 import { validateXML, detectLanguage, ValidationResult } from '../utils/xmlValidator';
 import { ClipboardUtils } from '../utils/clipboardUtils';
+import StatusBar from './StatusBar';
 
 interface CodeEditorProps {
   htmlCode: string;
@@ -33,8 +50,10 @@ const CodeEditor: React.FC<CodeEditorProps> = ({
   const [canPaste, setCanPaste] = useState(false);
   const [lastSaved, setLastSaved] = useState<Date>(new Date());
   const [showToast, setShowToast] = useState<{message: string, type: 'success' | 'error'} | null>(null);
+  const [isAutoSaveEnabled] = useState(true);
 
   const detectedLanguage = useMemo(() => detectLanguage(htmlCode), [htmlCode]);
+  const lineCount = useMemo(() => htmlCode.split('\n').length, [htmlCode]);
 
   useEffect(() => {
     const handleResize = () => {
@@ -62,13 +81,11 @@ const CodeEditor: React.FC<CodeEditorProps> = ({
       setValidationResult(result);
       onValidationChange(result);
     }
-
-    setLastSaved(new Date());
   }, [htmlCode, detectedLanguage, onValidationChange]);
 
   useEffect(() => {
     if (showToast) {
-      const timer = setTimeout(() => setShowToast(null), 3000);
+      const timer = setTimeout(() => setShowToast(null), 2500);
       return () => clearTimeout(timer);
     }
   }, [showToast]);
@@ -80,9 +97,9 @@ const CodeEditor: React.FC<CodeEditorProps> = ({
   const handleCopyCode = async () => {
     const success = await ClipboardUtils.copyToClipboard(htmlCode);
     if (success) {
-      showMessage('কোড কপি হয়েছে!');
+      showMessage('Code copied to clipboard!');
     } else {
-      showMessage('কপি করতে সমস্যা হয়েছে', 'error');
+      showMessage('Failed to copy code', 'error');
     }
   };
 
@@ -91,40 +108,38 @@ const CodeEditor: React.FC<CodeEditorProps> = ({
       const clipboardText = await ClipboardUtils.pasteFromClipboard();
       if (clipboardText) {
         onCodeChange(clipboardText);
-        showMessage('কোড পেস্ট হয়েছে!');
+        showMessage('Code pasted successfully!');
       }
     } catch (err) {
-      showMessage('পেস্ট করতে সমস্যা হয়েছে', 'error');
+      showMessage('Failed to paste code', 'error');
     }
   };
 
-  // Fix: Simplified clear code handler without callback
   const handleClearCode = () => {
-    console.log('🗑️ Clear code button clicked');
-    const confirmed = window.confirm('আপনি কি নিশ্চিত যে সব কোড ডিলিট করতে চান? এই কাজটি আর ফিরিয়ে আনা যাবে না।');
+    const confirmed = window.confirm('Are you sure you want to delete all code? This action cannot be undone.');
     if (confirmed) {
-      console.log('✅ User confirmed, clearing code...');
-      // Direct call to clear code
       onCodeChange('');
-      showMessage('সব কোড ডিলিট হয়েছে!');
-      console.log('🎉 Code cleared successfully');
+      showMessage('All code deleted!');
       
-      // Focus editor after clearing
       setTimeout(() => {
         if (editorRef.current) {
           editorRef.current.focus();
-          console.log('📝 Editor focused after clear');
         }
       }, 100);
-    } else {
-      console.log('❌ User cancelled deletion');
     }
   };
 
-  const handleUndoCode = () => {
+  const handleUndo = () => {
     if (editorRef.current) {
       editorRef.current.trigger('keyboard', 'undo', null);
-      showMessage('আন্ডো করা হয়েছে!');
+      showMessage('Undo successful!');
+    }
+  };
+
+  const handleRedo = () => {
+    if (editorRef.current) {
+      editorRef.current.trigger('keyboard', 'redo', null);
+      showMessage('Redo successful!');
     }
   };
 
@@ -132,7 +147,7 @@ const CodeEditor: React.FC<CodeEditorProps> = ({
     localStorage.setItem('htmlEditorQuickSave', htmlCode);
     localStorage.setItem('htmlEditorLastSave', new Date().toISOString());
     setLastSaved(new Date());
-    showMessage('কোড সেভ হয়েছে!');
+    showMessage('Code saved!');
   };
 
   const handleExportCode = () => {
@@ -145,13 +160,13 @@ const CodeEditor: React.FC<CodeEditorProps> = ({
     a.click();
     document.body.removeChild(a);
     URL.revokeObjectURL(url);
-    showMessage('ফাইল ডাউনলোড হয়েছে!');
+    showMessage('File downloaded!');
   };
 
   const handleImportCode = () => {
     const input = document.createElement('input');
     input.type = 'file';
-    input.accept = '.html,.htm,.xml,.txt';
+    input.accept = '.html,.htm,.xml,.txt,.css,.js';
     input.onchange = (e) => {
       const file = (e.target as HTMLInputElement).files?.[0];
       if (file) {
@@ -159,7 +174,7 @@ const CodeEditor: React.FC<CodeEditorProps> = ({
         reader.onload = (e) => {
           const content = e.target?.result as string;
           onCodeChange(content);
-          showMessage('ফাইল আপলোড হয়েছে!');
+          showMessage(`${file.name} imported successfully!`);
         };
         reader.readAsText(file);
       }
@@ -167,11 +182,14 @@ const CodeEditor: React.FC<CodeEditorProps> = ({
     input.click();
   };
 
-  // Fix: Stable editor change handler
+  const handleFindReplace = () => {
+    if (editorRef.current) {
+      editorRef.current.trigger('keyboard', 'actions.find', null);
+    }
+  };
+
   const handleEditorChange = useCallback((value: string | undefined) => {
     const newCode = value || '';
-    console.log('📝 Editor change:', newCode.length, 'characters');
-    // Debounce to prevent rapid calls
     onCodeChange(newCode);
   }, [onCodeChange]);
 
@@ -179,182 +197,162 @@ const CodeEditor: React.FC<CodeEditorProps> = ({
   const warningCount = validationResult.errors.filter(e => e.type === 'warning').length;
 
   const getDeviceIcon = () => {
-    if (isMobile) return <Smartphone size={16} className="text-green-500" />;
-    if (isTablet) return <Tablet size={16} className="text-blue-500" />;
-    return null;
+    if (isMobile) return <Smartphone size={14} className="text-primary" />;
+    if (isTablet) return <Tablet size={14} className="text-primary" />;
+    return <Monitor size={14} className="text-primary" />;
+  };
+
+  const ActionButton = ({ 
+    onClick, 
+    icon: Icon, 
+    title, 
+    variant = 'default' 
+  }: { 
+    onClick: () => void; 
+    icon: React.ElementType; 
+    title: string; 
+    variant?: 'default' | 'danger' | 'success';
+  }) => {
+    const baseClasses = "p-2 rounded-lg transition-all duration-200 hover:scale-105 focus:outline-none focus:ring-2 focus:ring-primary/50";
+    const variantClasses = {
+      default: isDarkMode 
+        ? 'hover:bg-secondary text-muted-foreground hover:text-foreground' 
+        : 'hover:bg-secondary text-muted-foreground hover:text-foreground',
+      danger: isDarkMode 
+        ? 'text-destructive hover:bg-destructive/10 hover:text-destructive' 
+        : 'text-destructive hover:bg-destructive/10 hover:text-destructive',
+      success: isDarkMode 
+        ? 'text-success hover:bg-success/10 hover:text-success' 
+        : 'text-success hover:bg-success/10 hover:text-success',
+    };
+
+    return (
+      <button
+        onClick={onClick}
+        className={`${baseClasses} ${variantClasses[variant]}`}
+        title={title}
+      >
+        <Icon size={16} />
+      </button>
+    );
   };
 
   return (
     <div className="flex-1 flex flex-col min-h-0">
       {/* Toast Notification */}
       {showToast && (
-        <div className={`fixed top-4 right-4 z-50 px-4 py-2 rounded-lg shadow-lg transition-all duration-300 ${
+        <div className={`fixed top-4 right-4 z-50 px-4 py-3 rounded-lg shadow-lg transition-all duration-300 animate-slide-down flex items-center space-x-2 ${
           showToast.type === 'success' 
-            ? 'bg-green-500 text-white' 
-            : 'bg-red-500 text-white'
+            ? 'bg-success text-success-foreground' 
+            : 'bg-destructive text-destructive-foreground'
         }`}>
-          {showToast.message}
+          {showToast.type === 'success' ? <Check size={16} /> : <AlertTriangle size={16} />}
+          <span className="font-medium">{showToast.message}</span>
         </div>
       )}
 
-      <div className={`px-2 sm:px-4 py-2 sm:py-3 border-b transition-colors duration-300 ${
+      {/* Toolbar */}
+      <div className={`px-3 py-2 border-b transition-colors duration-300 ${
         isDarkMode 
-          ? 'bg-gray-900 border-gray-700 text-gray-300' 
-          : 'bg-white border-gray-200 text-gray-700'
+          ? 'bg-card border-border' 
+          : 'bg-card border-border'
       }`}>
         <div className="flex flex-col space-y-2">
-          {/* Top Row - Title and Device Info */}
+          {/* Top Row */}
           <div className="flex items-center justify-between">
-            <div className="flex items-center space-x-2 sm:space-x-3 min-w-0">
-              <div className="flex items-center space-x-1 sm:space-x-2">
-                <span className="text-xs sm:text-sm font-semibold">
-                  {language === 'xml' ? '🔧 Blogger XML' : '💻 HTML Editor'}
+            <div className="flex items-center space-x-3">
+              <div className="flex items-center space-x-2">
+                <div className={`p-1.5 rounded-md ${isDarkMode ? 'bg-primary/20' : 'bg-primary/10'}`}>
+                  <FileCode2 size={16} className="text-primary" />
+                </div>
+                <span className="text-sm font-semibold">
+                  {language === 'xml' ? 'Blogger XML Editor' : 'HTML Editor'}
                 </span>
                 {getDeviceIcon()}
               </div>
             </div>
-            <div className="text-xs opacity-60 hidden lg:flex items-center space-x-2">
-              <div className="w-2 h-2 bg-green-400 rounded-full animate-pulse"></div>
-              <span>সেভ হয়েছে {lastSaved.toLocaleTimeString()}</span>
+            
+            <div className="hidden md:flex items-center space-x-2 text-xs text-muted-foreground">
+              <div className="flex items-center space-x-1">
+                <div className="w-2 h-2 bg-success rounded-full animate-pulse-subtle"></div>
+                <span>Auto-save enabled</span>
+              </div>
             </div>
           </div>
 
-          {/* Status Row - Validation Results */}
+          {/* Status Badges */}
           <div className="flex flex-wrap items-center gap-2">
             {language === 'xml' && (
               <>
                 {errorCount > 0 && (
-                  <span className="text-xs px-2 py-1 bg-red-500 bg-opacity-10 text-red-600 rounded-full border border-red-500 border-opacity-20 flex items-center space-x-1">
-                    <AlertTriangle size={12} />
-                    <span>{errorCount} ত্রুটি</span>
+                  <span className="text-xs px-2 py-1 bg-destructive/10 text-destructive rounded-full border border-destructive/20 flex items-center space-x-1">
+                    <AlertTriangle size={10} />
+                    <span>{errorCount} {errorCount === 1 ? 'error' : 'errors'}</span>
                   </span>
                 )}
                 {warningCount > 0 && (
-                  <span className="text-xs px-2 py-1 bg-yellow-500 bg-opacity-10 text-yellow-600 rounded-full border border-yellow-500 border-opacity-20">
-                    {warningCount} সতর্কতা
+                  <span className="text-xs px-2 py-1 bg-warning/10 text-warning rounded-full border border-warning/20 flex items-center space-x-1">
+                    <AlertTriangle size={10} />
+                    <span>{warningCount} {warningCount === 1 ? 'warning' : 'warnings'}</span>
                   </span>
                 )}
-                {validationResult.isValid && (
-                  <span className="text-xs px-2 py-1 bg-green-500 bg-opacity-10 text-green-600 rounded-full border border-green-500 border-opacity-20">
-                    ✓ সঠিক Blogger XML
+                {validationResult.isValid && errorCount === 0 && (
+                  <span className="text-xs px-2 py-1 bg-success/10 text-success rounded-full border border-success/20 flex items-center space-x-1">
+                    <Check size={10} />
+                    <span>Valid Blogger XML</span>
                   </span>
                 )}
               </>
             )}
-            <span className="text-xs px-2 py-1 bg-blue-500 bg-opacity-10 text-blue-600 rounded-full border border-blue-500 border-opacity-20">
-              {htmlCode.length} অক্ষর
+            <span className="text-xs px-2 py-1 bg-primary/10 text-primary rounded-full border border-primary/20">
+              {htmlCode.length.toLocaleString()} characters
+            </span>
+            <span className="text-xs px-2 py-1 bg-secondary text-secondary-foreground rounded-full">
+              {lineCount} lines
             </span>
           </div>
 
-          {/* Enhanced Action Buttons Row */}
-          <div className="flex items-center justify-between flex-wrap gap-2">
-            <div className="flex items-center space-x-1 sm:space-x-2">
-              <button
-                onClick={onShowTemplates}
-                className={`text-xs px-2 sm:px-3 py-1.5 rounded-full transition-all duration-200 flex items-center space-x-1 border ${
-                  isDarkMode 
-                    ? 'hover:bg-gray-700 text-gray-400 border-gray-600 hover:border-gray-500' 
-                    : 'hover:bg-gray-100 text-gray-600 border-gray-300 hover:border-gray-400'
-                }`}
-              >
-                <FileCode2 size={14} />
-                <span className="hidden sm:inline">Blogger Templates</span>
-                <span className="sm:hidden">Templates</span>
-              </button>
-            </div>
+          {/* Action Buttons */}
+          <div className="flex items-center justify-between">
+            <button
+              onClick={onShowTemplates}
+              className={`text-xs px-3 py-1.5 rounded-lg transition-all duration-200 flex items-center space-x-1.5 border font-medium ${
+                isDarkMode 
+                  ? 'hover:bg-secondary border-border hover:border-primary/50 text-muted-foreground hover:text-foreground' 
+                  : 'hover:bg-secondary border-border hover:border-primary/50 text-muted-foreground hover:text-foreground'
+              }`}
+            >
+              <FileCode2 size={14} />
+              <span>Templates</span>
+            </button>
             
-            {/* Quick Action Buttons */}
-            <div className="flex items-center space-x-1">
-              <button
-                onClick={handleCopyCode}
-                className={`p-2 rounded-lg transition-all duration-200 hover:scale-105 ${
-                  isDarkMode 
-                    ? 'hover:bg-gray-700 text-gray-400 hover:text-white' 
-                    : 'hover:bg-gray-100 text-gray-600 hover:text-gray-800'
-                }`}
-                title="সব কোড কপি করুন"
-              >
-                <Copy size={16} />
-              </button>
-              
+            <div className="flex items-center space-x-0.5">
+              <ActionButton onClick={handleCopyCode} icon={Copy} title="Copy all code (Ctrl+C)" />
               {canPaste && (
-                <button
-                  onClick={handlePasteCode}
-                  className={`p-2 rounded-lg transition-all duration-200 hover:scale-105 ${
-                    isDarkMode 
-                      ? 'hover:bg-gray-700 text-gray-400 hover:text-white' 
-                      : 'hover:bg-gray-100 text-gray-600 hover:text-gray-800'
-                  }`}
-                  title="কোড পেস্ট করুন"
-                >
-                  <Clipboard size={16} />
-                </button>
+                <ActionButton onClick={handlePasteCode} icon={Clipboard} title="Paste code (Ctrl+V)" />
               )}
               
-              <button
-                onClick={handleUndoCode}
-                className={`p-2 rounded-lg transition-all duration-200 hover:scale-105 ${
-                  isDarkMode 
-                    ? 'hover:bg-gray-700 text-gray-400 hover:text-white' 
-                    : 'hover:bg-gray-100 text-gray-600 hover:text-gray-800'
-                }`}
-                title="আন্ডো করুন"
-              >
-                <RotateCcw size={16} />
-              </button>
+              <div className={`w-px h-6 mx-1 ${isDarkMode ? 'bg-border' : 'bg-border'}`} />
               
-              <button
-                onClick={handleQuickSave}
-                className={`p-2 rounded-lg transition-all duration-200 hover:scale-105 ${
-                  isDarkMode 
-                    ? 'hover:bg-gray-700 text-gray-400 hover:text-white' 
-                    : 'hover:bg-gray-100 text-gray-600 hover:text-gray-800'
-                }`}
-                title="দ্রুত সেভ"
-              >
-                <Save size={16} />
-              </button>
-
-              <button
-                onClick={handleExportCode}
-                className={`p-2 rounded-lg transition-all duration-200 hover:scale-105 ${
-                  isDarkMode 
-                    ? 'hover:bg-gray-700 text-gray-400 hover:text-white' 
-                    : 'hover:bg-gray-100 text-gray-600 hover:text-gray-800'
-                }`}
-                title="ফাইল ডাউনলোড করুন"
-              >
-                <Download size={16} />
-              </button>
-
-              <button
-                onClick={handleImportCode}
-                className={`p-2 rounded-lg transition-all duration-200 hover:scale-105 ${
-                  isDarkMode 
-                    ? 'hover:bg-gray-700 text-gray-400 hover:text-white' 
-                    : 'hover:bg-gray-100 text-gray-600 hover:text-gray-800'
-                }`}
-                title="ফাইল আপলোড করুন"
-              >
-                <Upload size={16} />
-              </button>
+              <ActionButton onClick={handleUndo} icon={Undo2} title="Undo (Ctrl+Z)" />
+              <ActionButton onClick={handleRedo} icon={Redo2} title="Redo (Ctrl+Y)" />
+              <ActionButton onClick={handleFindReplace} icon={Search} title="Find & Replace (Ctrl+F)" />
               
-              <button
-                onClick={handleClearCode}
-                className={`p-2 rounded-lg transition-all duration-200 hover:scale-105 text-red-500 ${
-                  isDarkMode 
-                    ? 'hover:bg-red-900/20 hover:text-red-400' 
-                    : 'hover:bg-red-50 hover:text-red-600'
-                }`}
-                title="সব কোড ডিলিট করুন"
-              >
-                <Trash2 size={16} />
-              </button>
+              <div className={`w-px h-6 mx-1 ${isDarkMode ? 'bg-border' : 'bg-border'}`} />
+              
+              <ActionButton onClick={handleQuickSave} icon={Save} title="Quick save (Ctrl+S)" variant="success" />
+              <ActionButton onClick={handleExportCode} icon={Download} title="Download file" />
+              <ActionButton onClick={handleImportCode} icon={Upload} title="Import file" />
+              
+              <div className={`w-px h-6 mx-1 ${isDarkMode ? 'bg-border' : 'bg-border'}`} />
+              
+              <ActionButton onClick={handleClearCode} icon={Trash2} title="Clear all code" variant="danger" />
             </div>
           </div>
         </div>
       </div>
       
+      {/* Monaco Editor */}
       <div className="flex-1 min-h-0">
         <Editor
           height="100%"
@@ -365,17 +363,18 @@ const CodeEditor: React.FC<CodeEditorProps> = ({
           theme={isDarkMode ? 'custom-dark' : 'custom-light'}
           options={{
             minimap: { enabled: !isMobile },
-            fontSize: isMobile ? 14 : 16,
+            fontSize: isMobile ? 14 : 15,
             lineNumbers: 'on',
             wordWrap: 'on',
             automaticLayout: true,
             scrollBeyondLastLine: false,
             tabSize: 2,
             insertSpaces: true,
-            renderWhitespace: 'boundary',
-            fontFamily: 'JetBrains Mono, Consolas, Monaco, monospace',
+            renderWhitespace: 'selection',
+            fontFamily: "'JetBrains Mono', 'Fira Code', Consolas, Monaco, monospace",
+            fontLigatures: true,
             lineHeight: 1.6,
-            letterSpacing: 0.5,
+            letterSpacing: 0.3,
             suggestOnTriggerCharacters: true,
             quickSuggestions: true,
             folding: !isMobile,
@@ -388,13 +387,32 @@ const CodeEditor: React.FC<CodeEditorProps> = ({
             mouseWheelScrollSensitivity: 0.5,
             contextmenu: true,
             selectOnLineNumbers: true,
-            roundedSelection: false,
+            roundedSelection: true,
             readOnly: false,
             cursorStyle: 'line',
+            cursorWidth: 2,
             accessibilitySupport: 'auto',
+            padding: { top: 16, bottom: 16 },
+            bracketPairColorization: { enabled: true },
+            guides: {
+              bracketPairs: true,
+              indentation: true,
+            },
           }}
         />
       </div>
+
+      {/* Status Bar */}
+      <StatusBar
+        isDarkMode={isDarkMode}
+        charCount={htmlCode.length}
+        lineCount={lineCount}
+        language={language}
+        errorCount={errorCount}
+        warningCount={warningCount}
+        lastSaved={lastSaved}
+        isAutoSaveEnabled={isAutoSaveEnabled}
+      />
     </div>
   );
 };

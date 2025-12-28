@@ -9,10 +9,10 @@ import {
   Search,
   Layers,
   Zap,
-  FileText,
   Brain,
   Settings,
-  ChevronDown
+  ChevronDown,
+  Sparkles
 } from 'lucide-react';
 
 interface EnhancedToolbarProps {
@@ -62,7 +62,7 @@ const EnhancedToolbar: React.FC<EnhancedToolbarProps> = ({
   const tools = [
     {
       icon: Wand2,
-      label: 'Code Formatter',
+      label: 'Format',
       description: 'Format & beautify code',
       onClick: onShowFormatter,
       color: 'text-blue-500'
@@ -79,7 +79,7 @@ const EnhancedToolbar: React.FC<EnhancedToolbarProps> = ({
       label: 'Snippets',
       description: 'Code snippets library',
       onClick: onShowSnippets,
-      color: 'text-blue-500'
+      color: 'text-cyan-500'
     },
     {
       icon: Palette,
@@ -100,109 +100,123 @@ const EnhancedToolbar: React.FC<EnhancedToolbarProps> = ({
       label: 'Share',
       description: 'Share & collaborate',
       onClick: onShowShareOptions,
-      color: 'text-indigo-500'
+      color: 'text-violet-500'
     },
     {
       icon: Search,
-      label: 'Search',
+      label: 'Find',
       description: 'Find & replace',
       onClick: onShowSearchReplace,
-      color: 'text-yellow-500'
+      color: 'text-amber-500'
     }
   ];
 
+  const ToolButton = ({ 
+    icon: Icon, 
+    label, 
+    description, 
+    onClick, 
+    color, 
+    isNew = false 
+  }: {
+    icon: React.ElementType;
+    label: string;
+    description: string;
+    onClick: () => void;
+    color: string;
+    isNew?: boolean;
+  }) => (
+    <button
+      onClick={onClick}
+      className={`relative flex items-center space-x-1.5 px-2.5 py-1.5 rounded-lg transition-all duration-200 whitespace-nowrap text-xs sm:text-sm group ${
+        isDarkMode 
+          ? 'hover:bg-secondary text-muted-foreground hover:text-foreground' 
+          : 'hover:bg-secondary text-muted-foreground hover:text-foreground'
+      }`}
+      title={description}
+    >
+      <Icon size={14} className={`${color} transition-transform group-hover:scale-110`} />
+      <span className="hidden sm:inline font-medium">{label}</span>
+      {isNew && (
+        <span className="absolute -top-1 -right-1 flex h-2.5 w-2.5">
+          <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-primary opacity-75"></span>
+          <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-primary"></span>
+        </span>
+      )}
+    </button>
+  );
+
   return (
-    <div className={`px-2 sm:px-4 py-2 border-b transition-colors duration-300 ${
+    <div className={`px-3 py-2 border-b transition-colors duration-300 ${
       isDarkMode 
-        ? 'bg-gray-900 border-gray-700 text-gray-300' 
-        : 'bg-white border-gray-200 text-gray-700'
+        ? 'bg-card border-border' 
+        : 'bg-card border-border'
     }`}>
       <div className="flex items-center justify-between">
         <div className="flex items-center space-x-1 overflow-x-auto scrollbar-hide">
-          <div className="flex items-center space-x-1 mr-2 flex-shrink-0">
-            <Zap size={16} className="text-yellow-500" />
-            <span className="text-xs sm:text-sm font-semibold whitespace-nowrap">Pro Tools</span>
+          {/* Pro Tools Label */}
+          <div className="flex items-center space-x-1.5 mr-3 flex-shrink-0 px-2 py-1 rounded-lg bg-gradient-primary">
+            <Sparkles size={14} className="text-white" />
+            <span className="text-xs font-bold text-white">Pro Tools</span>
           </div>
           
-          {/* AI Tools - Priority on mobile */}
-          <div className="flex items-center space-x-1">
+          {/* AI Tools - Priority */}
+          <div className="flex items-center space-x-0.5">
             {aiTools.map((tool, index) => (
-              <button
-                key={index}
-                onClick={tool.onClick}
-                className={`relative flex items-center space-x-1 px-2 sm:px-3 py-1.5 rounded-lg transition-all duration-200 whitespace-nowrap text-xs sm:text-sm ${
-                  isDarkMode 
-                    ? 'hover:bg-gray-700 text-gray-400 hover:text-white' 
-                    : 'hover:bg-gray-100 text-gray-600 hover:text-gray-900'
-                }`}
-                title={tool.description}
-              >
-                <tool.icon size={14} className={tool.color} />
-                <span className="hidden xs:inline">{tool.label}</span>
-                {tool.isNew && (
-                  <span className="absolute -top-1 -right-1 w-2 h-2 bg-red-500 rounded-full animate-pulse"></span>
-                )}
-              </button>
+              <ToolButton key={index} {...tool} />
             ))}
           </div>
 
           {/* Separator */}
-          <div className={`w-px h-6 ${isDarkMode ? 'bg-gray-600' : 'bg-gray-300'}`}></div>
+          <div className={`w-px h-6 mx-2 ${isDarkMode ? 'bg-border' : 'bg-border'}`}></div>
 
-          {/* Other Tools */}
-          <div className="hidden md:flex items-center space-x-1">
+          {/* Other Tools - Desktop */}
+          <div className="hidden md:flex items-center space-x-0.5">
             {tools.map((tool, index) => (
-              <button
-                key={index}
-                onClick={tool.onClick}
-                className={`flex items-center space-x-1 px-2 sm:px-3 py-1.5 rounded-lg transition-all duration-200 whitespace-nowrap text-xs sm:text-sm ${
-                  isDarkMode 
-                    ? 'hover:bg-gray-700 text-gray-400 hover:text-white' 
-                    : 'hover:bg-gray-100 text-gray-600 hover:text-gray-900'
-                }`}
-                title={tool.description}
-              >
-                <tool.icon size={14} className={tool.color} />
-                <span className="hidden lg:inline">{tool.label}</span>
-              </button>
+              <ToolButton key={index} {...tool} />
             ))}
           </div>
 
           {/* Mobile dropdown for other tools */}
-          <div className="md:hidden">
-            <details className="relative">
-              <summary className={`flex items-center space-x-1 px-2 py-1.5 rounded-lg cursor-pointer transition-all duration-200 ${
+          <div className="md:hidden relative group">
+            <button 
+              className={`flex items-center space-x-1.5 px-2.5 py-1.5 rounded-lg transition-all duration-200 ${
                 isDarkMode 
-                  ? 'hover:bg-gray-700 text-gray-400 hover:text-white' 
-                  : 'hover:bg-gray-100 text-gray-600 hover:text-gray-900'
-              }`}>
-                <Layers size={14} className="text-gray-500" />
-                <ChevronDown size={12} />
-              </summary>
-              <div className={`absolute top-full left-0 mt-1 w-48 rounded-lg border shadow-lg z-50 ${
-                isDarkMode 
-                  ? 'bg-gray-800 border-gray-700' 
-                  : 'bg-white border-gray-200'
-              }`}>
+                  ? 'hover:bg-secondary text-muted-foreground hover:text-foreground' 
+                  : 'hover:bg-secondary text-muted-foreground hover:text-foreground'
+              }`}
+            >
+              <Layers size={14} />
+              <span className="text-xs font-medium">More</span>
+              <ChevronDown size={12} />
+            </button>
+            
+            {/* Dropdown Menu */}
+            <div className={`absolute top-full left-0 mt-1 w-52 rounded-xl border shadow-xl z-50 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 ${
+              isDarkMode 
+                ? 'bg-card border-border' 
+                : 'bg-card border-border'
+            }`}>
+              <div className="p-1">
                 {tools.map((tool, index) => (
                   <button
                     key={index}
                     onClick={tool.onClick}
-                    className={`w-full flex items-center space-x-2 px-3 py-2 text-left hover:${
-                      isDarkMode ? 'bg-gray-700' : 'bg-gray-50'
-                    } first:rounded-t-lg last:rounded-b-lg transition-colors`}
+                    className={`w-full flex items-center space-x-3 px-3 py-2.5 text-left rounded-lg transition-colors ${
+                      isDarkMode ? 'hover:bg-secondary' : 'hover:bg-secondary'
+                    }`}
                   >
-                    <tool.icon size={14} className={tool.color} />
-                    <div>
-                      <div className="text-sm font-medium">{tool.label}</div>
-                      <div className={`text-xs ${isDarkMode ? 'text-gray-400' : 'text-gray-500'}`}>
+                    <tool.icon size={16} className={tool.color} />
+                    <div className="flex-1 min-w-0">
+                      <div className="text-sm font-medium text-foreground">{tool.label}</div>
+                      <div className="text-xs text-muted-foreground truncate">
                         {tool.description}
                       </div>
                     </div>
                   </button>
                 ))}
               </div>
-            </details>
+            </div>
           </div>
         </div>
       </div>
